@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="중학교 1학년 수아의 아기자기한 다이어리와 일상 기록이 머무는 공간, 수아홈입니다.">
+    <meta name="author" content="수아 (Suah)">
+    <title>수아의 다이어리 💖 | suahhome.com</title>
+    
+    <!-- 구글 폰트 (동글동글하고 귀여운 서체와 깔끔한 서체 조합) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- 우리 스타일시트 -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 상단 네비게이션 바 -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo">suah's diary<span class="heart">💝</span></a>
+            
+            <nav class="nav-menu">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#about" class="nav-link">About Me</a>
+                <a href="#gallery" class="nav-link">My Diary</a>
+                <a href="#guestbook" class="nav-link">Guestbook</a>
+            </nav>
+            
+            <!-- 테마 전환 버튼 (다크모드) -->
+            <button id="theme-toggle" class="theme-btn" aria-label="테마 전환">
+                <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- 1. 대문 화면 (Home Section) -->
+        <section id="home" class="hero-section">
+            <div class="hero-container">
+                <div class="hero-text">
+                    <span class="badge">🎒 Middle School Life</span>
+                    <h1>수아의 꿈꾸는<br>미니 홈피에 오신걸 환영해요!</h1>
+                    <p>안녕하세요! 중학교 1학년이 된 수아의 개인 홈페이지입니다. 좋아하는 음악, 매일 그리는 그림, 그리고 소소한 학교 일기들을 기록하는 소중한 공간이에요. 🌸</p>
+                    <div class="hero-buttons">
+                        <a href="#about" class="btn btn-primary">수아 프로필 🐰</a>
+                        <a href="#guestbook" class="btn btn-secondary">친구 방명록 남기기 🐾</a>
+                    </div>
+                </div>
+                <div class="hero-image-wrapper">
+                    <img src="images/hero.png" alt="수아의 다이어리 일러스트" class="hero-image">
+                    <div class="deco-card card-1">🍦 매점 최애 빵</div>
+                    <div class="deco-card card-2">🎵 플레이리스트</div>
+                </div>
+            </div>
+            <div class="scroll-indicator">
+                <div class="mouse">
+                    <div class="wheel"></div>
+                </div>
+                <span>Scroll Down</span>
+            </div>
+        </section>
+
+        <!-- 2. 프로필 화면 (About Section) -->
+        <section id="about" class="about-section">
+            <div class="section-title">
+                <h2>All About Suah</h2>
+                <div class="title-bar"></div>
+                <p>새싹 가득한 중학교 1학년, 나를 소개합니다!</p>
+            </div>
+            
+            <div class="about-grid">
+                <!-- 프로필 카드 -->
+                <div class="about-card profile-card">
+                    <div class="profile-avatar">⭐</div>
+                    <h3>수아 (Suah)</h3>
+                    <p class="role">중1 감성 다이어리 꾸미기 장인</p>
+                    <p class="bio">친구들이랑 코인노래방 가기, 다꾸용 귀여운 스티커 모으기가 취미예요! 중학생이 되어 매일 새로운 세상을 만나는 중입니다. ✨</p>
+                    
+                    <div class="tag-container">
+                        <span class="tag">#다이어리꾸미기</span>
+                        <span class="tag">#코노_애창곡_1위</span>
+                        <span class="tag">#마라탕덕후</span>
+                        <span class="tag">#아이돌덕질</span>
+                    </div>
+                </div>
+
+                <!-- 좋아하는 것들 카드 -->
+                <div class="about-card info-card">
+                    <h3>My Favorite Thing</h3>
+                    <ul class="favorites-list">
+                        <li>
+                            <span class="fav-icon">🍡</span>
+                            <div>
+                                <strong>마라탕 & 탕후루</strong>
+                                <p>시험 끝나고 친구들이랑 먹는 2단계 마라탕과 샤인머스캣 탕후루는 찐행복!</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="fav-icon">🎨</span>
+                            <div>
+                                <strong>다이어리 꾸미기 (다꾸)</strong>
+                                <p>다양한 스티커와 마스킹 테이프로 매일 일기를 예쁘게 쓰는 시간을 좋아해요.</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="fav-icon">🎧</span>
+                            <div>
+                                <strong>최애 아이돌 노래 무한재생</strong>
+                                <p>요즘은 신나는 댄스 곡을 들으면서 춤추는 게 가장 재밌어요!</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 일기장/갤러리 화면 (Gallery Section) -->
+        <section id="gallery" class="gallery-section">
+            <div class="section-title">
+                <h2>Suah's Diary</h2>
+                <div class="title-bar"></div>
+                <p>수아의 반짝반짝 빛나는 하루하루 기록들</p>
+            </div>
+
+            <div class="gallery-grid">
+                <!-- 다이어리 카드 1 -->
+                <div class="gallery-item">
+                    <div class="gallery-emoji-placeholder" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                        <span>🎒</span>
+                    </div>
+                    <div class="gallery-info">
+                        <span class="date">2026. 06. 26</span>
+                        <h4>드디어 시험 끝! 😆</h4>
+                        <p>친구들이랑 다 같이 떡볶이 먹고 코인 노래방에서 목청껏 부른 행복했던 날!</p>
+                    </div>
+                </div>
+
+                <!-- 다이어리 카드 2 -->
+                <div class="gallery-item">
+                    <div class="gallery-emoji-placeholder" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
+                        <span>🛍️</span>
+                    </div>
+                    <div class="gallery-info">
+                        <span class="date">2026. 06. 20</span>
+                        <h4>소품샵 털고 온 날 💸</h4>
+                        <p>새로 나온 고양이 캐릭터 스티커랑 투명 다이어리 커버 득템! 다꾸 열정 충전 완료.</p>
+                    </div>
+                </div>
+
+                <!-- 다이어리 카드 3 -->
+                <div class="gallery-item">
+                    <div class="gallery-emoji-placeholder" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                        <span>🌱</span>
+                    </div>
+                    <div class="gallery-info">
+                        <span class="date">2026. 06. 15</span>
+                        <h4>중학교 첫 동아리 시간!</h4>
+                        <p>인기 동아리인 도서감상반에 가입 완료! 좋은 소설 많이 읽어야지.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 방명록 화면 (Guestbook Section) -->
+        <section id="guestbook" class="guestbook-section">
+            <div class="section-title">
+                <h2>친구들의 흔적 남기기 🐾</h2>
+                <div class="title-bar"></div>
+                <p>수아 미니홈피에 들러준 흔적을 방명록으로 예쁘게 남겨주세요!</p>
+            </div>
+
+            <div class="guestbook-container">
+                <!-- 방명록 입력 양식 -->
+                <form id="guestbook-form" class="guestbook-form">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="nickname">내 닉네임 / 이름</label>
+                            <input type="text" id="nickname" required placeholder="예: 단짝유진이">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="message">방명록 한마디</label>
+                        <textarea id="message" required placeholder="수아에게 남길 재밌고 따뜻한 한마디를 적어줘!" rows="4"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">방명록 스티커 붙이기 📌</button>
+                </form>
+
+                <!-- 남겨진 방명록 리스트 -->
+                <div class="guestbook-list-wrapper">
+                    <h3>도착한 메시지 (<span id="message-count">2</span>)</h3>
+                    <div id="guestbook-list" class="guestbook-list">
+                        <!-- 기본 예시 메시지 1 -->
+                        <div class="guestbook-card">
+                            <div class="card-header">
+                                <span class="guest-name">단짝민지 🍒</span>
+                                <span class="guest-date">2026. 06. 26 13:10</span>
+                            </div>
+                            <p class="guest-msg">헐 수아 홈페이지 완전 부러워! 엄청 이쁘다!!! 나 내일 학교 갈 때 다꾸 스티커 빌려줘 ㅋㅋㅋ</p>
+                        </div>
+                        <!-- 기본 예시 메시지 2 -->
+                        <div class="guestbook-card">
+                            <div class="card-header">
+                                <span class="guest-name">유진언니 🐰</span>
+                                <span class="guest-date">2026. 06. 25 19:22</span>
+                            </div>
+                            <p class="guest-msg">수아야 중학교 생활 적응도 잘하고 기특하네! 시험 보느라 수고 많았구 마라탕 머그러 가쟈~</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 하단 푸터 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p class="copyright">&copy; 2026 suahhome.com. All rights reserved.</p>
+            <p class="powered">Designed with ❤️ by Antigravity IDE (with Dad's love)</p>
+        </div>
+    </footer>
+
+    <!-- 자바스크립트 스크립트 연결 -->
+    <script src="main.js"></script>
+</body>
+</html>

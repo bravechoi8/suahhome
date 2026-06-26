@@ -1,0 +1,853 @@
+/* ==========================================================================
+   수아홈(suahhome.com) 메인 스타일시트
+   이곳에서 웹사이트의 모든 색상, 폰트, 애니메이션 등을 설정합니다.
+   코딩 초보자분도 쉽게 보실 수 있도록 각 영역별로 꼼꼼히 한글 주석을 달아두었습니다!
+   ========================================================================== */
+
+/* 1. 디자인 시스템 변수 설정 (색상 및 기본값) */
+:root {
+    /* 라이트 모드 (기본: 따뜻한 크림 & 라벤더 분위기) */
+    --bg-primary: #fcfaf7;       /* 메인 배경색 (따뜻한 미색) */
+    --bg-secondary: #ffffff;     /* 보조 배경색 (순백색) */
+    --bg-glass: rgba(255, 255, 255, 0.65); /* 반투명 글래스 배경 */
+    --border-glass: rgba(255, 255, 255, 0.4); /* 반투명 글래스 테두리 */
+    
+    --text-main: #3d343f;        /* 일반 글씨색 (따뜻한 차콜색) */
+    --text-muted: #7e7182;       /* 설명글 등 흐린 글씨색 (라벤더 회색) */
+    
+    --primary-color: #a78bfa;    /* 대표 강조색 (연보라색) */
+    --primary-hover: #8b5cf6;   /* 대표 색상 마우스 올렸을 때 */
+    --accent-light: #f5f3ff;     /* 아주 연한 보라색 배경 */
+    --accent-gradient: linear-gradient(135deg, #fbcfe8 0%, #c4b5fd 100%); /* 화사한 그라데이션 */
+    
+    --card-shadow: 0 10px 30px rgba(167, 139, 250, 0.12); /* 부드러운 그림자 */
+    --transition-speed: 0.3s;    /* 움직임 속도 (0.3초) */
+}
+
+/* 다크 모드 활성화 시 적용되는 색상 변수 */
+body.dark-mode {
+    --bg-primary: #120e16;       /* 메인 배경색 (아주 어두운 보라색) */
+    --bg-secondary: #1d1822;     /* 보조 배경색 (어두운 보라회색) */
+    --bg-glass: rgba(29, 24, 34, 0.7); /* 다크 반투명 배경 */
+    --border-glass: rgba(255, 255, 255, 0.08); /* 다크 반투명 테두리 */
+    
+    --text-main: #f3eff5;        /* 일반 글씨색 (크림 화이트) */
+    --text-muted: #a79cb0;       /* 흐린 글씨색 (연회색) */
+    
+    --primary-color: #c4b5fd;    /* 대표 강조색 (연보라색) */
+    --primary-hover: #ddd6fe;   /* 대표 색상 마우스 올렸을 때 */
+    --accent-light: #2a2233;     /* 어두운 보라색 배경 */
+    --accent-gradient: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%); /* 화려한 네온빛 그라데이션 */
+    
+    --card-shadow: 0 10px 35px rgba(0, 0, 0, 0.4); /* 진한 다크 그림자 */
+}
+
+/* 2. 브라우저 기본 세팅 초기화 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* 패딩과 테두리를 너비 계산에 포함 */
+}
+
+html {
+    scroll-behavior: smooth; /* 메뉴 클릭 시 부드러운 스크롤 */
+}
+
+body {
+    font-family: 'Gaegu', 'Outfit', 'Noto Sans KR', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-main);
+    line-height: 1.6;
+    font-size: 1.25rem; /* 개구체 폰트 특성상 글씨 크기를 약간 키워 가독성을 높입니다. */
+    overflow-x: hidden;
+    transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+/* 3. 상단 헤더 & 네비게이션 바 */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    background-color: var(--bg-glass);
+    backdrop-filter: blur(12px); /* 뒤에 있는 요소 블러(흐림) 처리 */
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-glass);
+    z-index: 1000;
+    transition: background-color var(--transition-speed), border-color var(--transition-speed);
+}
+
+.nav-container {
+    max-width: 1200px;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between; /* 양 끝 정렬 */
+    align-items: center;            /* 세로 중앙 정렬 */
+}
+
+.logo {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text-main);
+}
+
+.logo .dot {
+    color: var(--primary-color);
+}
+
+.nav-menu {
+    display: flex;
+    gap: 32px;
+}
+
+.nav-link {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: color var(--transition-speed);
+    position: relative;
+    padding: 4px 0;
+}
+
+.nav-link:hover {
+    color: var(--text-main);
+}
+
+/* 네비게이션 링크 마우스 호버 시 아래 밑줄 애니메이션 */
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--primary-color);
+    transition: width var(--transition-speed);
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
+
+/* 4. 버튼 스타일 공통 */
+.btn {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 30px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    text-align: center;
+    border: none;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(167, 139, 250, 0.3);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px); /* 살짝 위로 붕 뜨는 효과 */
+}
+
+.btn-secondary {
+    background-color: var(--accent-light);
+    color: var(--text-main);
+}
+
+.btn-secondary:hover {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+}
+
+/* 테마 토글 버튼 */
+.theme-btn {
+    background: none;
+    border: 1px solid var(--border-glass);
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    transition: background-color var(--transition-speed), transform var(--transition-speed);
+}
+
+.theme-btn:hover {
+    background-color: var(--accent-light);
+    transform: rotate(15deg); /* 회전 인터랙션 */
+}
+
+.theme-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* 라이트 모드일 때는 해 아이콘 숨기기 */
+.icon-sun {
+    display: none;
+}
+
+/* 다크 모드일 때는 달 아이콘 숨기고 해 아이콘 보이기 */
+body.dark-mode .icon-moon {
+    display: none;
+}
+body.dark-mode .icon-sun {
+    display: block;
+}
+
+/* 5. 대문 영역 (Hero Section) */
+.hero-section {
+    padding-top: 150px; /* 헤더 높이만큼 띄워줌 */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+}
+
+.hero-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr; /* 좌우 화면 분할 */
+    gap: 60px;
+    align-items: center;
+    width: 100%;
+}
+
+.badge {
+    display: inline-block;
+    padding: 6px 16px;
+    background-color: var(--accent-light);
+    color: var(--primary-color);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.hero-text h1 {
+    font-size: 3.2rem;
+    font-weight: 800;
+    line-height: 1.25;
+    margin-bottom: 24px;
+}
+
+.hero-text p {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-bottom: 36px;
+    max-width: 500px;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 16px;
+}
+
+/* 히어로 이미지 영역 */
+.hero-image-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hero-image {
+    width: 100%;
+    max-width: 450px;
+    border-radius: 30px;
+    box-shadow: var(--card-shadow);
+    /* 둥글둥글하고 포근한 둥둥 뜨는 3D 느낌 애니메이션 */
+    animation: float 6s ease-in-out infinite;
+}
+
+/* 공중에 떠 있는 장식 카드 */
+.deco-card {
+    position: absolute;
+    padding: 12px 24px;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background-color: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-glass);
+    box-shadow: var(--card-shadow);
+    animation: float-reverse 7s ease-in-out infinite;
+}
+
+.card-1 {
+    top: 15%;
+    left: -5%;
+}
+
+.card-2 {
+    bottom: 15%;
+    right: -2%;
+}
+
+/* 스크롤 가이드 디자인 */
+.scroll-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    gap: 8px;
+    animation: bounce 2s infinite; /* 상하 바운싱 애니메이션 */
+}
+
+.mouse {
+    width: 22px;
+    height: 36px;
+    border: 2px solid var(--text-muted);
+    border-radius: 12px;
+    position: relative;
+}
+
+.wheel {
+    width: 4px;
+    height: 8px;
+    background-color: var(--text-muted);
+    border-radius: 2px;
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: scroll-wheel 1.5s infinite;
+}
+
+/* 6. 공통 섹션 제목 (Section Title) */
+section {
+    padding: 100px 0; /* 각 섹션 간의 여백 */
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 60px;
+    padding: 0 24px;
+}
+
+.section-title h2 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+.title-bar {
+    width: 50px;
+    height: 4px;
+    background-color: var(--primary-color);
+    margin: 0 auto 20px auto;
+    border-radius: 2px;
+}
+
+.section-title p {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+/* 7. 내 소개 영역 (About Section) */
+.about-section {
+    background-color: var(--bg-secondary);
+    transition: background-color var(--transition-speed);
+}
+
+.about-grid {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+}
+
+.about-card {
+    background-color: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: 24px;
+    padding: 40px;
+    box-shadow: var(--card-shadow);
+    transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed);
+    backdrop-filter: blur(10px);
+}
+
+.about-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(167, 139, 250, 0.2);
+}
+
+.profile-card {
+    text-align: center;
+    background: var(--accent-gradient);
+    border: none;
+    color: #2d232e; /* 그라데이션 위에서 잘 보이는 어두운 글자색 */
+}
+
+body.dark-mode .profile-card {
+    color: #ffffff; /* 다크 모드일 땐 흰색 글자 */
+}
+
+.profile-avatar {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+
+.profile-card h3 {
+    font-size: 1.6rem;
+    margin-bottom: 4px;
+}
+
+.profile-card .role {
+    font-size: 0.95rem;
+    opacity: 0.8;
+    margin-bottom: 20px;
+}
+
+.profile-card .bio {
+    font-size: 1rem;
+    margin-bottom: 30px;
+    line-height: 1.7;
+}
+
+.tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tag {
+    background-color: rgba(255, 255, 255, 0.4);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+body.dark-mode .tag {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* My Favorites 리스트 */
+.info-card h3 {
+    margin-bottom: 24px;
+    font-size: 1.4rem;
+    position: relative;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent-light);
+}
+
+.favorites-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.favorites-list li {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.fav-icon {
+    font-size: 1.5rem;
+    background-color: var(--accent-light);
+    padding: 10px;
+    border-radius: 12px;
+    line-height: 1;
+}
+
+.favorites-list li strong {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.favorites-list li p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* 8. 갤러리 영역 (Gallery Section) */
+.gallery-section {
+    background-color: var(--bg-primary);
+}
+
+.gallery-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+.gallery-item {
+    background-color: var(--bg-secondary);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed);
+    border: 1px solid var(--border-glass);
+}
+
+.gallery-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(167, 139, 250, 0.15);
+}
+
+.gallery-emoji-placeholder {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.gallery-emoji-placeholder span {
+    font-size: 4.5rem;
+    transition: transform 0.5s ease;
+}
+
+.gallery-item:hover .gallery-emoji-placeholder span {
+    transform: scale(1.15) rotate(5deg); /* 마우스 올렸을 때 귀여운 회전 확대 */
+}
+
+.gallery-info {
+    padding: 24px;
+}
+
+.gallery-info .date {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.gallery-info h4 {
+    font-size: 1.15rem;
+    margin-bottom: 8px;
+}
+
+.gallery-info p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* 9. 방명록 영역 (Guestbook Section) */
+.guestbook-section {
+    background-color: var(--bg-secondary);
+}
+
+.guestbook-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 40px;
+}
+
+.guestbook-form {
+    background-color: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: var(--card-shadow);
+    height: fit-content;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.input-group input,
+.input-group textarea {
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-glass);
+    background-color: var(--bg-secondary);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color var(--transition-speed);
+}
+
+.input-group input:focus,
+.input-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* 방명록 카드 목록 */
+.guestbook-list-wrapper h3 {
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+}
+
+#message-count {
+    color: var(--primary-color);
+}
+
+.guestbook-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 480px;
+    overflow-y: auto; /* 리스트가 길어지면 스크롤 처리 */
+    padding-right: 8px;
+}
+
+/* 스크롤바 디자인 */
+.guestbook-list::-webkit-scrollbar {
+    width: 6px;
+}
+.guestbook-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.guestbook-list::-webkit-scrollbar-thumb {
+    background-color: var(--border-glass);
+    border-radius: 3px;
+}
+
+.guestbook-card {
+    background-color: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    transition: transform var(--transition-speed);
+    animation: slideIn 0.3s ease-out; /* 방명록 새로 추가 시 애니메이션 */
+}
+
+.guestbook-card:hover {
+    transform: translateX(3px); /* 마우스 올리면 옆으로 살짝 이동 */
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+}
+
+.guest-name {
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.guest-date {
+    color: var(--text-muted);
+}
+
+.guest-msg {
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* 10. 하단 푸터 (Footer) */
+.footer {
+    background-color: var(--bg-primary);
+    border-top: 1px solid var(--border-glass);
+    padding: 40px 0;
+    text-align: center;
+    transition: background-color var(--transition-speed);
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.copyright {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.powered {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+/* 11. 애니메이션 모음 */
+
+/* 위아래 둥둥 뜨는 애니메이션 */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-12px);
+    }
+}
+
+/* 반대로 둥둥 뜨는 애니메이션 */
+@keyframes float-reverse {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(10px);
+    }
+}
+
+/* 상하 바운싱 애니메이션 */
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-8px);
+    }
+    60% {
+        transform: translateY(-4px);
+    }
+}
+
+/* 마우스 스크롤 휠 이동 애니메이션 */
+@keyframes scroll-wheel {
+    0% {
+        opacity: 1;
+        top: 6px;
+    }
+    100% {
+        opacity: 0;
+        top: 20px;
+    }
+}
+
+/* 아바타 둥둥 뛰는 효과 */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.08);
+    }
+}
+
+/* 새로운 카드 추가 시 부드럽게 들어오는 효과 */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 로고 하트 쿵쾅쿵쾅 애니메이션 */
+.logo .heart {
+    display: inline-block;
+    animation: heartBeat 1.2s infinite;
+    margin-left: 4px;
+}
+
+@keyframes heartBeat {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.25);
+    }
+}
+
+/* 12. 모바일 반응형 디자인 (화면이 작아질 때) */
+@media (max-width: 768px) {
+    .nav-container {
+        padding: 0 16px;
+    }
+
+    .nav-menu {
+        display: none; /* 모바일에서는 일단 메뉴를 심플하게 숨깁니다 */
+    }
+
+    .hero-container {
+        grid-template-columns: 1fr; /* 화면 1단으로 쌓기 */
+        text-align: center;
+        gap: 40px;
+        padding-top: 20px;
+    }
+
+    .hero-text h1 {
+        font-size: 2.3rem;
+    }
+
+    .hero-text p {
+        margin: 0 auto 24px auto;
+    }
+
+    .hero-buttons {
+        justify-content: center;
+    }
+
+    .hero-image {
+        max-width: 320px;
+    }
+
+    .card-1 {
+        left: 2%;
+        top: 10%;
+    }
+    
+    .card-2 {
+        right: 2%;
+        bottom: 10%;
+    }
+
+    .about-grid {
+        grid-template-columns: 1fr; /* 1단 구성 */
+    }
+
+    .guestbook-container {
+        grid-template-columns: 1fr; /* 1단 구성 */
+    }
+}
