@@ -96,6 +96,76 @@ document.addEventListener('DOMContentLoaded', () => {
         newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
 
+    /* ==========================================
+       3. 다이어리 상세보기 모달 팝업 기능
+       ========================================== */
+    const diaryModal = document.getElementById('diary-modal');
+    const modalImg = document.getElementById('modal-img');
+    const modalEmojiPlaceholder = document.getElementById('modal-emoji-placeholder');
+    const modalEmoji = document.getElementById('modal-emoji');
+    const modalDate = document.getElementById('modal-date');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDesc = document.getElementById('modal-desc');
+    const closeModalBtn = diaryModal.querySelector('.close-button');
+
+    // 갤러리 내 모든 카드들을 찾아서 클릭 이벤트 연결
+    const galleryItems = document.querySelectorAll('.gallery-item');
+    galleryItems.forEach(item => {
+        item.addEventListener('click', () => {
+            // 1. 카드 안에서 날짜와 제목 텍스트 가져오기
+            const dateText = item.querySelector('.date').textContent;
+            const titleText = item.querySelector('h4').textContent;
+            
+            // 2. data-detail에 숨겨져 있는 상세한 긴 글 가져오기
+            const detailText = item.getAttribute('data-detail') || "상세한 일기 내용이 없습니다.";
+            
+            // 3. 이미지 정보 가져오기 (실제 이미지가 있는 카드인지 확인)
+            const imgElement = item.querySelector('.gallery-img');
+            const emojiPlaceholder = item.querySelector('.gallery-emoji-placeholder');
+            
+            if (imgElement) {
+                // 이미지가 있는 카드라면, 이미지 보이고 이모지 숨김
+                modalImg.style.display = 'block';
+                modalImg.src = imgElement.src;
+                modalImg.alt = imgElement.alt;
+                modalEmojiPlaceholder.style.display = 'none';
+            } else if (emojiPlaceholder) {
+                // 이모지 카드의 경우, 이미지 숨기고 이모지와 배경 그라데이션 재현
+                modalImg.style.display = 'none';
+                modalEmojiPlaceholder.style.display = 'flex';
+                modalEmojiPlaceholder.style.background = emojiPlaceholder.style.background;
+                modalEmoji.textContent = emojiPlaceholder.querySelector('span').textContent;
+            }
+
+            // 4. 모달창 텍스트 채우기
+            modalDate.textContent = dateText;
+            modalTitle.textContent = titleText;
+            modalDesc.textContent = detailText;
+
+            // 5. 모달창 띄우기
+            diaryModal.classList.add('show');
+            document.body.style.overflow = 'hidden'; // 뒤쪽 화면 스크롤 금지
+        });
+    });
+
+    // 닫기 버튼 클릭 시 모달창 닫기
+    closeModalBtn.addEventListener('click', () => {
+        closeModal();
+    });
+
+    // 모달창 바깥쪽 어두운 배경 클릭 시 닫기
+    diaryModal.addEventListener('click', (event) => {
+        if (event.target === diaryModal) {
+            closeModal();
+        }
+    });
+
+    // 모달 닫기 공통 함수
+    function closeModal() {
+        diaryModal.classList.remove('show');
+        document.body.style.overflow = ''; // 스크롤 원래대로
+    }
+
     /**
      * 보안을 위한 안전장치: HTML 특수문자 방지 함수
      * 사용자가 방명록에 해킹 코드(<script> 등)를 적는 것을 막아줍니다.
