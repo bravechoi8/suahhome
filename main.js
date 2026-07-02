@@ -195,7 +195,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const storage = firebase.storage();
 
     // 전역 트래킹 변수
     let currentSelectedDiaryId = '';
@@ -211,6 +210,42 @@ document.addEventListener('DOMContentLoaded', () => {
     let dbCustomGuestbook = [];
     let dbDeletedIds = [];
     let dbEditedContents = {};
+
+    // -------------------------------------------------------------
+    // 이미지 용량 압축 헬퍼 함수 (카드 등록 필수인 Storage 를 우회하기 위한 예술적 우회기법)
+    // -------------------------------------------------------------
+    function compressImage(file, maxWidth = 800, quality = 0.75) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // 용량이 10분의 1 이하로 주는 고압축 JPEG 포맷 변환
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(compressedDataUrl);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    }
 
     // -------------------------------------------------------------
     // 기본 정적 데이터셋 정의
@@ -255,7 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 데이터 실시간 수신 리스너 (Firebase)
     // -------------------------------------------------------------
     
-    // 1. 삭제 및 수정 데이터 리스너
     db.collection('deleted_ids').onSnapshot(snapshot => {
         dbDeletedIds = snapshot.docs.map(doc => doc.id);
         renderAll();
@@ -269,7 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAll();
     });
 
-    // 2. 커스텀 일기 데이터 리스너
     db.collection('custom_diaries').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         dbCustomDiaries = snapshot.docs.map(doc => ({
             id: doc.id,
@@ -278,7 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAll();
     });
 
-    // 3. 커스텀 사진 데이터 리스너
     db.collection('custom_photos').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         dbCustomPhotos = snapshot.docs.map(doc => ({
             id: doc.id,
@@ -287,7 +319,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAll();
     });
 
-    // 4. 커스텀 방명록 데이터 리스너
     db.collection('custom_guestbook').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         dbCustomGuestbook = snapshot.docs.map(doc => ({
             id: doc.id,
@@ -296,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAll();
     });
 
-    // 화면 종합 갱신 렌더러
     function renderAll() {
         renderDiaries();
         renderPhotos();
@@ -304,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 4. 다이어리 직접 쓰기 및 수정 (Firebase 연동)
+    // 4. 다이어리 직접 쓰기 및 수정 (Canvas 압축 연동)
     // -------------------------------------------------------------
     const toggleFormBtn = document.getElementById('toggle-diary-form');
     const formContainer = document.getElementById('diary-form-container');
@@ -369,11 +399,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 다이어리 카드 동적 주입 렌더러
     function renderDiaries() {
         if (!galleryGrid) return;
         
-        // 1. 그리드를 추가 카드만 두고 초기화
         galleryGrid.innerHTML = `
             <div class="gallery-item add-card" id="add-diary-card">
                 <div class="add-card-icon">➕</div>
@@ -381,7 +409,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        // 추가 카드 리스너 재바인딩
         const addCardNode = document.getElementById('add-diary-card');
         if (addCardNode) {
             addCardNode.addEventListener('click', () => {
@@ -393,7 +420,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 2. 기본 일기 중 삭제되지 않은 것 필터링 및 수정본 반영
         const visibleDefaults = defaultDiaries.filter(d => !dbDeletedIds.includes(d.id)).map(d => {
             if (dbEditedContents[d.id]) {
                 return { ...d, ...dbEditedContents[d.id] };
@@ -401,7 +427,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return d;
         });
 
-        // 3. 전체 일기 목록 (커스텀 데이터 + 기본 데이터)
         const allDiaries = [...dbCustomDiaries, ...visibleDefaults];
 
         allDiaries.forEach(diary => {
@@ -426,7 +451,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)'
                 ];
                 let randomGrad = gradients[0];
-                // ID 에 비례하는 그래디언트 색상 매핑으로 일관성 유지
                 const charCodeSum = diary.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
                 randomGrad = gradients[charCodeSum % gradients.length];
                 
@@ -446,7 +470,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            // 클릭 상세 보기 모달 연결
             card.addEventListener('click', () => {
                 currentSelectedDiaryId = diary.id;
                 
@@ -475,7 +498,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 일기 쓰기 폼 제출 (Firebase Storage 사진 업로드 & Firestore 실시간 업로드)
     if (diaryForm) {
         diaryForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -495,21 +517,15 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 let imageUrl = '';
                 
-                // 사진 파일이 선택되었을 때만 Firebase Storage 에 업로드
                 if (mediaType === 'image' && fileInput.files && fileInput.files[0]) {
-                    const file = fileInput.files[0];
-                    const ref = storage.ref().child('diaries/' + Date.now() + '_' + file.name);
-                    const snapshot = await ref.put(file);
-                    imageUrl = await snapshot.ref.getDownloadURL();
+                    // 고압축 Canvas 리사이징 적용하여 데이터베이스에 직접 저장
+                    imageUrl = await compressImage(fileInput.files[0], 800, 0.7);
                 }
 
                 if (editDiaryTargetId) {
-                    // [수정 모드]
                     if (editDiaryTargetId.startsWith('default-')) {
-                        // 1. 기본 일기 수정 저장
                         let finalImage = imageUrl;
                         if (!finalImage && mediaType === 'image') {
-                            // 사진을 변경 안 했으면 기존 카드 이미지 복원
                             const original = defaultDiaries.find(d => d.id === editDiaryTargetId);
                             const currentEdited = dbEditedContents[editDiaryTargetId];
                             finalImage = currentEdited ? currentEdited.image : (original ? original.image : '');
@@ -519,7 +535,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             id: editDiaryTargetId, date, title, summary, mediaType, image: finalImage, emoji, detail
                         });
                     } else {
-                        // 2. 커스텀 일기 수정 저장
                         let finalImage = imageUrl;
                         if (!finalImage && mediaType === 'image') {
                             const original = dbCustomDiaries.find(d => d.id === editDiaryTargetId);
@@ -532,7 +547,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     editDiaryTargetId = '';
                     submitBtn.textContent = '등록하기 💖';
                 } else {
-                    // [신규 등록 모드]
                     const id = 'custom-' + Date.now();
                     await db.collection('custom_diaries').doc(id).set({
                         id, date, title, summary, mediaType, image: imageUrl, emoji, detail,
@@ -553,20 +567,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 모달 내 "일기 삭제"
     if (modalDeleteDiaryBtn) {
         modalDeleteDiaryBtn.addEventListener('click', async () => {
             if (!currentSelectedDiaryId) return;
             if (confirm('이 일기를 정말 삭제하시겠어요? 😢')) {
                 try {
                     if (currentSelectedDiaryId.startsWith('default-')) {
-                        // 기본 일기는 deleted_ids 컬렉션에 추가
                         await db.collection('deleted_ids').doc(currentSelectedDiaryId).set({
                             id: currentSelectedDiaryId,
                             deletedAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                     } else {
-                        // 커스텀 일기는 삭제
                         await db.collection('custom_diaries').doc(currentSelectedDiaryId).delete();
                     }
                     closeModal();
@@ -578,7 +589,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 모달 내 "일기 수정"
     if (modalEditDiaryBtn) {
         modalEditDiaryBtn.addEventListener('click', () => {
             if (!currentSelectedDiaryId) return;
@@ -619,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* ==========================================
-       5. 독립적인 사진첩 (Photos) 기능 및 원본 뷰어/수정 (Firebase 연동)
+       5. 독립적인 사진첩 (Photos) 기능 및 원본 뷰어/수정 (Canvas 압축 연동)
        ========================================== */
     const togglePhotoFormBtn = document.getElementById('toggle-photo-form');
     const photoFormContainer = document.getElementById('photo-form-container');
@@ -689,7 +699,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.overflow = 'hidden';
     }
 
-    // 사진첩 렌더링
     function renderPhotos() {
         if (!photosGrid) return;
         
@@ -711,7 +720,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 기본 사진 필터링 및 수정 반영
         const visibleDefaults = defaultPhotos.filter(p => !dbDeletedIds.includes(p.id)).map(p => {
             if (dbEditedContents[p.id]) {
                 return { ...p, ...dbEditedContents[p.id] };
@@ -726,7 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.className = 'photo-card';
             card.setAttribute('data-id', photo.id);
             card.innerHTML = `
-                <img src="&nbsp;${photo.src}" alt="${escapeHtml(photo.title)}" onerror="this.src='${photo.src}'">
+                <img src="${photo.src}" alt="${escapeHtml(photo.title)}">
                 <div class="photo-overlay">
                     <h4>${escapeHtml(photo.title)}</h4>
                 </div>
@@ -734,14 +742,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             card.addEventListener('click', () => {
                 openPhotoViewer(photo.src, photo.title);
-                currentSelectedPhotoSrc = photo.id; // 트래킹 ID
+                currentSelectedPhotoSrc = photo.id;
             });
 
             photosGrid.appendChild(card);
         });
     }
 
-    // 사진 폼 등록/수정 제출 (Storage & Firestore 연동)
     if (photoForm) {
         photoForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -756,14 +763,11 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 let fileUrl = '';
                 if (fileInput.files && fileInput.files[0]) {
-                    const file = fileInput.files[0];
-                    const ref = storage.ref().child('photos/' + Date.now() + '_' + file.name);
-                    const snapshot = await ref.put(file);
-                    fileUrl = await snapshot.ref.getDownloadURL();
+                    // 고압축 Canvas 리사이징 적용하여 데이터베이스에 직접 저장
+                    fileUrl = await compressImage(fileInput.files[0], 800, 0.7);
                 }
 
                 if (editPhotoTargetId) {
-                    // [수정 모드]
                     if (editPhotoTargetId.startsWith('default-')) {
                         let finalSrc = fileUrl;
                         if (!finalSrc) {
@@ -787,7 +791,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     editPhotoTargetId = '';
                     submitBtn.textContent = '사진첩에 등록하기 💖';
                 } else {
-                    // [신규 등록 모드]
                     const id = 'custom-p-' + Date.now();
                     await db.collection('custom_photos').doc(id).set({
                         id, title, src: fileUrl,
@@ -807,7 +810,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 사진 뷰어 내 "사진 삭제"
     if (viewerDeletePhotoBtn) {
         viewerDeletePhotoBtn.addEventListener('click', async () => {
             if (!currentSelectedPhotoSrc) return;
@@ -830,7 +832,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 사진 뷰어 내 "사진 수정"
     if (viewerEditPhotoBtn) {
         viewerEditPhotoBtn.addEventListener('click', () => {
             if (!currentSelectedPhotoSrc) return;
@@ -846,7 +847,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (targetObj) {
                 document.getElementById('photo-title').value = targetObj.title || '';
-                document.getElementById('photo-file').required = false; // 수정 시에는 파일 지정 필수 해제
+                document.getElementById('photo-file').required = false;
 
                 closePhotoViewer();
                 photoFormContainer.style.display = 'block';
@@ -863,12 +864,10 @@ document.addEventListener('DOMContentLoaded', () => {
        ========================================== */
     // 기존에 선언된 guestbookList, guestbookForm, messageCountSpan 을 재사용합니다.
 
-    // 방명록 렌더링 함수
     function renderGuestbook() {
         if (!guestbookList) return;
         guestbookList.innerHTML = '';
 
-        // 기본 방명록 중 삭제되지 않은 것 필터링 및 수정본 반영
         const visibleDefaults = defaultGuestbook.filter(g => !dbDeletedIds.includes(g.id)).map(g => {
             if (dbEditedContents[g.id]) {
                 return { ...g, ...dbEditedContents[g.id] };
@@ -876,7 +875,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return g;
         });
 
-        // 전체 방명록 병합
         const allGuestbook = [...dbCustomGuestbook, ...visibleDefaults];
 
         allGuestbook.forEach(item => {
@@ -898,7 +896,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="guest-msg">${escapeHtml(item.message)}</p>
             `;
 
-            // 방명록 수정 버튼 클릭 리스너
             card.querySelector('.edit-gb-btn').addEventListener('click', async (e) => {
                 e.stopPropagation();
                 
@@ -932,7 +929,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // 방명록 삭제 버튼 클릭 리스너
             card.querySelector('.delete-gb-btn').addEventListener('click', async (e) => {
                 e.stopPropagation();
                 if (confirm('이 방명록 글을 삭제하시겠어요? 😢')) {
@@ -954,11 +950,9 @@ document.addEventListener('DOMContentLoaded', () => {
             guestbookList.appendChild(card);
         });
 
-        // 총 개수 갱신
         if (messageCountSpan) messageCountSpan.textContent = allGuestbook.length;
     }
 
-    // 방명록 신규 등록 제출 (Firestore 저장)
     if (guestbookForm) {
         const oldForm = guestbookForm;
         const newForm = oldForm.cloneNode(true);
