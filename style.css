@@ -1040,3 +1040,320 @@ body.dark-mode .modal-content {
         grid-template-columns: 1fr; /* 1단 구성 */
     }
 }
+
+/* ==========================================
+   5. 새 일기 작성 폼 및 사진첩 (Photos) 스타일
+   ========================================== */
+
+/* 일기 쓰기 토글 버튼 */
+.btn-diary-toggle {
+    font-size: 0.95rem;
+    padding: 6px 14px;
+    margin-left: 15px;
+    background-color: var(--primary-color, #ff6f91);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'Gaegu', cursive, sans-serif;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+}
+
+.btn-diary-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+    background-color: #ff477e;
+}
+
+/* 새 일기 작성 폼 컨테이너 */
+.diary-form-container {
+    max-width: 700px;
+    margin: 20px auto 40px auto;
+    padding: 24px;
+    background: var(--card-bg, #ffffff);
+    border: 2px solid var(--border-color, #f0e6df);
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    animation: slideDown 0.4s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.diary-form-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.diary-form-container .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 600px) {
+    .diary-form-container .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.diary-form-container .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+}
+
+.diary-form-container label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-color, #4a4a4a);
+}
+
+.diary-form-container input,
+.diary-form-container select,
+.diary-form-container textarea {
+    padding: 10px 14px;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background-color: var(--input-bg, #fafafa);
+    color: var(--text-color, #333);
+    transition: border-color 0.3s ease;
+}
+
+.diary-form-container input:focus,
+.diary-form-container select:focus,
+.diary-form-container textarea:focus {
+    outline: none;
+    border-color: var(--primary-color, #ff6f91);
+    background-color: #fff;
+}
+
+.diary-form-container .form-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* 다크모드 대응을 위한 변수 추가 */
+body.dark-mode .diary-form-container {
+    background: #2a2a2a;
+    border-color: #3e3e3e;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .diary-form-container input,
+body.dark-mode .diary-form-container select,
+body.dark-mode .diary-form-container textarea {
+    background-color: #1e1e1e;
+    border-color: #3e3e3e;
+    color: #e0e0e0;
+}
+
+body.dark-mode .diary-form-container input:focus,
+body.dark-mode .diary-form-container select:focus,
+body.dark-mode .diary-form-container textarea:focus {
+    border-color: var(--primary-color, #ff6f91);
+    background-color: #252525;
+}
+
+/* 3.5 사진첩 (Photos) 섹션 디자인 */
+.photos-section {
+    padding: 80px 0;
+    background-color: var(--bg-secondary, #faf6f0);
+    border-top: 1px solid var(--border-color, #f0e6df);
+    border-bottom: 1px solid var(--border-color, #f0e6df);
+    text-align: center;
+}
+
+body.dark-mode .photos-section {
+    background-color: #1e1e1e;
+    border-color: #2a2a2a;
+}
+
+.photos-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 40px;
+}
+
+/* 사진 카드 디자인 */
+.photo-card {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.photo-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+/* 오버레이 (마우스를 올렸을 때 제목 노출) */
+.photo-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.photo-overlay h4 {
+    color: #ffffff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0;
+    text-align: left;
+    transform: translateY(10px);
+    transition: transform 0.3s ease;
+}
+
+/* 사진첩 호버 효과 */
+.photo-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.photo-card:hover img {
+    transform: scale(1.08);
+}
+
+.photo-card:hover .photo-overlay {
+    opacity: 1;
+}
+
+.photo-card:hover .photo-overlay h4 {
+    transform: translateY(0);
+}
+
+/* ==========================================
+   6. Single Page Application (SPA) 탭 방식 전환 스타일
+   ========================================== */
+
+/* 탭 콘텐츠 기본 숨김 */
+section.hero-section,
+section.about-section,
+section.gallery-section,
+section.photos-section,
+section.guestbook-section {
+    display: none !important;
+}
+
+/* 활성화된 탭만 노출 */
+section.hero-section.active {
+    display: flex !important;
+}
+section.about-section.active,
+section.gallery-section.active,
+section.photos-section.active,
+section.guestbook-section.active {
+    display: block !important;
+}
+
+/* 네비게이션 활성화 탭 표시 스타일 */
+.nav-menu .nav-link.active {
+    color: var(--primary-color, #ff6f91) !important;
+    font-weight: 700;
+    border-bottom: 2px solid var(--primary-color, #ff6f91);
+    padding-bottom: 4px;
+}
+
+body.dark-mode .nav-menu .nav-link.active {
+    color: var(--primary-color, #ff6f91) !important;
+}
+
+/* ==========================================
+   7. 새 일기/사진 추가 버튼 및 카드 스타일
+   ========================================== */
+
+/* 다이어리 및 사진첩 추가 카드 공통 스타일 */
+.gallery-item.add-card,
+.photo-card.add-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: 3px dashed var(--primary-color, #ff6f91) !important;
+    background: var(--card-bg, #ffffff);
+    border-radius: 12px;
+    padding: 30px;
+    cursor: pointer;
+    color: var(--primary-color, #ff6f91);
+    transition: all 0.3s ease;
+    min-height: 250px;
+    box-sizing: border-box;
+}
+
+.photo-card.add-card {
+    aspect-ratio: 1 / 1;
+    min-height: unset;
+    height: 100%;
+}
+
+.add-card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    transition: transform 0.3s ease;
+}
+
+.gallery-item.add-card p,
+.photo-card.add-card p {
+    font-family: 'Gaegu', cursive, sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.gallery-item.add-card:hover,
+.photo-card.add-card:hover {
+    background: rgba(255, 111, 145, 0.05);
+    transform: translateY(-5px);
+}
+
+.gallery-item.add-card:hover .add-card-icon,
+.photo-card.add-card:hover .add-card-icon {
+    transform: scale(1.2) rotate(90deg);
+}
+
+body.dark-mode .gallery-item.add-card,
+body.dark-mode .photo-card.add-card {
+    background: #2a2a2a;
+    border-color: #ff6f91;
+}
+
+body.dark-mode .gallery-item.add-card:hover,
+body.dark-mode .photo-card.add-card:hover {
+    background: rgba(255, 111, 145, 0.1);
+}

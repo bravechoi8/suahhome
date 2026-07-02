@@ -1521,23 +1521,23 @@ async function translateToEnglish(text) {
 
 async function geocodeCity(q){
   const cityMap = {
-    // 한국 주요 도시 (South Korea 명시하여 경기도 용인 등이 정확히 검색되게 함)
-    '서울': 'Seoul, South Korea', '부산': 'Busan, South Korea', '인천': 'Incheon, South Korea', '대구': 'Daegu, South Korea',
-    '대전': 'Daejeon, South Korea', '광주': 'Gwangju, South Korea', '울산': 'Ulsan, South Korea', '세종': 'Sejong, South Korea',
-    '제주': 'Jeju City, South Korea', '제주도': 'Jeju City, South Korea', '수원': 'Suwon, South Korea', '고양': 'Goyang, South Korea', 
-    '용인': 'Yongin-si, South Korea', '성남': 'Seongnam, South Korea', '부천': 'Bucheon, South Korea', '안산': 'Ansan, South Korea', 
-    '화성': 'Hwaseong, South Korea', '남양주': 'Namyangju, South Korea', '안양': 'Anyang, South Korea', '평택': 'Pyeongtaek, South Korea', 
-    '의정부': 'Uijeongbu, South Korea', '파주': 'Paju, South Korea', '시흥': 'Siheung, South Korea', '김포': 'Gimpo, South Korea', 
-    '광명': 'Gwangmyeong, South Korea', '종로': 'Seoul, South Korea', '중구': 'Seoul, South Korea', '강남': 'Seoul, South Korea', 
-    '서초': 'Seoul, South Korea', '춘천': 'Chuncheon, South Korea', '원주': 'Wonju, South Korea', '강릉': 'Gangneung, South Korea',
-    '청주': 'Cheongju, South Korea', '충주': 'Chungju, South Korea', '천안': 'Cheonan, South Korea', '아산': 'Asan, South Korea',
-    '전주': 'Jeonju, South Korea', '군산': 'Gunsan, South Korea', '익산': 'Iksan, South Korea', '목포': 'Mokpo, South Korea',
-    '여수': 'Yeosu, South Korea', '순천': 'Suncheon, South Korea', '포항': 'Pohang, South Korea', '경주': 'Gyeongju, South Korea',
-    '김천': 'Gimcheon, South Korea', '안동': 'Andong, South Korea', '구미': 'Gumi, South Korea', '창원': 'Changwon, South Korea',
-    '진주': 'Jinju, South Korea', '통영': 'Tongyeong, South Korea', '사천': 'Sacheon, South Korea', '김해': 'Gimhae, South Korea',
-    '밀양': 'Miryang, South Korea', '거제': 'Geoje, South Korea', '양산': 'Yangsan, South Korea',
+    // 한국 주요 도시 (South Korea 명시하되 Open-Meteo에서 잘 찾는 키워드로 보정)
+    '서울': 'Seoul', '부산': 'Busan', '인천': 'Incheon', '대구': 'Daegu',
+    '대전': 'Daejeon', '광주': 'Gwangju', '울산': 'Ulsan', '세종': 'Sejong',
+    '제주': 'Jeju City', '제주도': 'Jeju City', '수원': 'Suwon', '고양': 'Goyang', 
+    '용인': 'Yongin-si', '성남': 'Seongnam', '부천': 'Bucheon', '안산': 'Ansan', 
+    '화성': 'Hwaseong', '남양주': 'Namyangju', '안양': 'Anyang', '평택': 'Pyeongtaek', 
+    '의정부': 'Uijeongbu', '파주': 'Paju', '시흥': 'Siheung', '김포': 'Gimpo', 
+    '광명': 'Gwangmyeong', '종로': 'Seoul', '중구': 'Seoul', '강남': 'Seoul', 
+    '서초': 'Seoul', '춘천': 'Chuncheon', '원주': 'Wonju', '강릉': 'Gangneung',
+    '청주': 'Cheongju', '충주': 'Chungju', '천안': 'Cheonan', '아산': 'Asan',
+    '전주': 'Jeonju', '군산': 'Gunsan', '익산': 'Iksan', '목포': 'Mokpo',
+    '여수': 'Yeosu', '순천': 'Suncheon', '포항': 'Pohang', '경주': 'Gyeongju',
+    '김천': 'Gimcheon', '안동': 'Andong', '구미': 'Gumi', '창원': 'Changwon',
+    '진주': 'Jinju', '통영': 'Tongyeong', '사천': 'Sacheon', '김해': 'Gimhae',
+    '밀양': 'Miryang', '거제': 'Geoje', '양산': 'Yangsan',
     
-    // 해외 주요 도시 한글 매핑 추가 (전세계 어느 도시든 검색 용이하게 지원)
+    // 해외 주요 도시 한글 매핑 추가
     '뉴욕': 'New York', '로스앤젤레스': 'Los Angeles', 'LA': 'Los Angeles', '엘에이': 'Los Angeles',
     '시카고': 'Chicago', '샌프란시스코': 'San Francisco', '시애틀': 'Seattle', '워싱턴': 'Washington D.C.', 
     '보스턴': 'Boston', '라스베이거스': 'Las Vegas', '라스베가스': 'Las Vegas', '마이애미': 'Miami',
@@ -1554,10 +1554,11 @@ async function geocodeCity(q){
     '싱가포르': 'Singapore', '타이베이': 'Taipei', '가오슝': 'Kaohsiung', '다낭': 'Da Nang',
     '하노이': 'Hanoi', '호치민': 'Ho Chi Minh City', '마닐라': 'Manila', '세부': 'Cebu',
     '모스크바': 'Moscow', '블라디보스토크': 'Vladivostok', '토론토': 'Toronto', '밴쿠버': 'Vancouver',
-    '상파울루': 'Sao Paulo', '시드니': 'Sydney', '카이로': 'Cairo', '이스탄불': 'Istanbul',
+    '상파울루': 'Sao Paulo', '카이로': 'Cairo', '이스탄불': 'Istanbul',
     '파타야': 'Pattaya', '쿠알라룸푸르': 'Kuala Lumpur', '자카르타': 'Jakarta', '발리': 'Bali',
     '괌': 'Guam', '사이판': 'Saipan'
   };
+
   let query = q.trim();
   if (cityMap[query]) {
     query = cityMap[query];
@@ -1567,11 +1568,61 @@ async function geocodeCity(q){
       query = await translateToEnglish(query);
     }
   }
-  const url='https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(query)+'&count=1&language=ko&format=json';
-  const r=await fetch(url);if(!r.ok)throw new Error('geo '+r.status);const d=await r.json();
-  if(!d.results||!d.results.length)return null;
-  const g=d.results[0];
-  return {lat:g.latitude,lon:g.longitude,name:g.name,country:g.country||'',admin:g.admin1||''};
+
+  // Geocoding API를 직접 호출하는 내부 헬퍼 함수
+  const searchGeo = async (name) => {
+    const cleanName = name.replace(/[&>]/g, '').trim();
+    if (!cleanName) return null;
+    const url = 'https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(cleanName) + '&count=1&language=ko&format=json';
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (!d.results || !d.results.length) return null;
+    
+    const g = d.results[0];
+    let displayName = g.name;
+    
+    // 한국 지역(KR) 보정: 구 단위가 아닌 시/군 단위를 우선적으로 화면 표시 이름으로 설정
+    if (g.country_code === 'KR') {
+      if (g.admin2 && (g.admin2.endsWith('시') || g.admin2.endsWith('군'))) {
+        displayName = g.admin2;
+      } else if (g.admin2) {
+        displayName = g.admin2;
+      }
+    }
+    
+    return {
+      lat: g.latitude,
+      lon: g.longitude,
+      name: displayName,
+      country: g.country || '',
+      admin: g.admin1 || ''
+    };
+  };
+
+  // 1단계: 원래 쿼리로 검색 시도
+  let res = await searchGeo(query);
+  if (res) return res;
+
+  // 2단계: 콤마(,)가 포함된 주소인 경우 쪼개서 뒤쪽 파트부터 검색해봅니다 (예: "Suji-gu, Yongin-si" -> "Yongin-si")
+  if (query.includes(',')) {
+    const parts = query.split(',').map(p => p.trim()).filter(Boolean);
+    for (let i = parts.length - 1; i >= 0; i--) {
+      res = await searchGeo(parts[i]);
+      if (res) return res;
+    }
+  }
+
+  // 3단계: 띄어쓰기로 구분된 경우 마지막 단어부터 검색해봅니다 (예: "경기도 용인시" -> "용인시")
+  const words = query.split(/\s+/).map(w => w.trim()).filter(Boolean);
+  if (words.length > 1) {
+    for (let i = words.length - 1; i >= 0; i--) {
+      res = await searchGeo(words[i]);
+      if (res) return res;
+    }
+  }
+
+  return null;
 }
 async function fetchWeather(lat,lon){
   const url='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+
