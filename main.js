@@ -213,6 +213,47 @@ document.addEventListener('DOMContentLoaded', () => {
     let dbEditedContents = {};
 
     // -------------------------------------------------------------
+    // 이미지 파일 고압축 Blob 변환 헬퍼 함수 (Storage 용량 절약용)
+    // -------------------------------------------------------------
+    function compressImageToBlob(file, maxWidth = 1024, quality = 0.75) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // 고압축 JPEG 포맷의 Blob 파일 데이터로 추출
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            resolve(blob);
+                        } else {
+                            reject(new Error('Canvas to Blob conversion failed'));
+                        }
+                    }, 'image/jpeg', quality);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    }
+
+    // -------------------------------------------------------------
     // 기본 정적 데이터셋 정의
     // -------------------------------------------------------------
     const defaultDiaries = [
@@ -225,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'default-7', date: '2026. 05. 20', title: '세인트 패트릭 성당 방문', summary: '뉴욕 한복판에 우뚝 솟은 고딕 양식 성당. 거대한 스테인드글라스에 압도당함.', detail: '뉴욕 5번가를 걷다가 현대적인 빌딩들 사이에 우뚝 솟아 있는 거대한 석조 건물인 세인트 패트릭 대성당에 들어갔어요. 문을 열고 한 걸음 들어가자마자 바깥의 시끄러운 경적 소리가 뚝 끊기고, 웅장하고 성스러운 공기가 온몸을 감쌌답니다. 하늘 높이 솟아 있는 뾰족한 천장 아치들과 벽면을 가득 채운 화려한 스테인드글라스를 통해 들어오는 은은한 무지갯빛 햇살이 너무 신비롭고 아름다웠어요. 한쪽에 마련된 촛대에 작은 초를 하나 밝히고 가족들의 건강과 나의 소소한 소원들을 빌며 조용히 마음을 가다듬는 경건하고 차분한 힐링의 시간을 보냈습니다.', mediaType: 'image', emoji: '', image: 'images/stpatrick_1.jpg' },
         { id: 'default-8', date: '2026. 05. 14', title: '체스 경기 복기하는 중 💭', summary: '패배한 판 분석하기. 상대방의 비숍 전술에 당했지만 다음엔 안 져!', detail: '어제 동아리 대국에서 아쉽게 패배했던 체스 판을 오늘 집 책상에서 혼자 조용히 복기해 보았어요. 당시에는 몰랐는데, 비숍을 킹사이드로 성급하게 전진시켰던 게 상대방 룩에게 중앙 통로를 통째로 내주는 결정적인 패착이었더라고요. 폰 구조를 무너뜨리지 않으면서 차분히 캐슬링을 먼저 해두었더라면 어땠을까 하는 아쉬움이 남았지만, 패배 원인을 정확히 짚어냈으니 다음 대국에서는 똑같은 실수를 하지 않을 거예요! 체스는 이길 때보다 질 때 배우는 게 더 많다는 선생님의 말씀이 마음에 와닿은, 한층 더 진지하게 성장한 하루였습니다.', mediaType: 'image', emoji: '', image: 'images/chess_2.jpg' },
         { id: 'default-9', date: '2026. 05. 08', title: '뉴욕 스트리트 한복판에서 📸', summary: '노란 옐로우캡과 고층 빌딩들. 어디를 찍어도 한 폭의 엽서 같은 멋진 뉴욕.', detail: '뉴욕의 5번가를 가족들과 천천히 걷다가, 햇살이 고층 빌딩 틈새로 쏟아지는 사거리 횡단보도 앞에서 멈춰 섰어요. 길가에는 뉴욕의 상징인 노란 택시들이 줄지어 빵빵거리며 달리고 있고, 전 세계에서 온 다양한 사람들이 바쁘게 걸어가고 있었는데 그 열기 가득한 분위기가 저를 너무 신나게 만들었어요! 마침 빌딩 숲 위로 파란 하늘이 너무 맑게 드러나서 신호등 기둥 옆에 서서 환하게 웃으며 인생샷 한 장을 남겼답니다. 어딜 가나 영화 속 스크린에 들어와 있는 듯한 기분을 안겨주는 뉴욕 거리의 멋진 순간이었습니다.', mediaType: 'image', emoji: '', image: 'images/stpatrick_2.jpg' },
-        { id: 'default-10', date: '2026. 05. 01', title: '해리포터 오리지널 굿즈 쇼핑 🛍️', summary: '극장 굿즈 매장에서 그리핀도르 목도리랑 지팡이 구매! 나도 이제 마법사.', detail: '뮤지컬 해리포터 공연이 끝나고 흥분이 채 가시지 않은 상태에서 극장 내 공식 기념품 샵으로 향했어요! 진열대에는 캐릭터별 마법 지팡이와 호그와트 기숙사 유니폼들이 가득해서 지갑을 열지 않을 수가 없었답니다. 고민 끝에 제가 가장 좋아하는 기숙사인 그리핀도르의 상징색인 붉은색과 금색이 번갈아 들어간 따뜻한 털목도리와 주인공 해리포터의 마법 지팡이를 샀어요. 목도리를 목에 칭칭 감고 지팡이를 손에 쥐고 포즈를 취하니까 정말로 9와 4분의 3 승강장을 통과한 마법사가 된 것처럼 하루 종일 행복했습니다.', mediaType: 'image', emoji: '', image: 'images/harrypotter_2.jpg' },
+        { id: 'default-10', date: '2026. 05. 01', title: '해리포터 오리지널 굿즈 쇼핑 🛍️', summary: '극장 굿즈 매장에서 그리핀도르 목도리랑 지팡이 구매! 나도 이제 마법사.', detail: '뮤지컬 해리포터 공연이 끝나고 흥분이 채 가시지 않은 상태에서 극장 내 공식 기념품 샵으로 향했어요! 진열대에는 캐릭터별 마법 지팡이와 호그와트 기숙사 유니폼들이 가득해서 지갑을 yer지 않을 수가 없었답니다. 고민 끝에 제가 가장 좋아하는 기숙사인 그리핀도르의 상징색인 붉은색과 금색이 번갈아 들어간 따뜻한 털목도리와 주인공 해리포터의 마법 지팡이를 샀어요. 목도리를 목에 칭칭 감고 지팡이를 손에 쥐고 포즈를 취하니까 정말로 9와 4분의 3 승강장을 통과한 마법사가 된 것처럼 하루 종일 행복했습니다.', mediaType: 'image', emoji: '', image: 'images/harrypotter_2.jpg' },
         { id: 'default-11', date: '2026. 04. 25', title: '날씨 좋은 날 공원 나들이 🍃', summary: '호숫가 벤치에 앉아서 시원한 바람맞기. 책 한 권 들고 힐링하기 딱 좋은 곳.', detail: '주말 아침, 따스한 봄 햇살이 방 안까지 가득 들어와서 근처 호수공원으로 돗자리와 책을 챙겨 나갔어요. 푸른 잔디밭 위에 자리를 펴고 엎드려서 평소에 바빠서 읽지 못했던 판타지 소설책을 펼쳤는데, 호수 위로 살랑살랑 불어오는 시원한 바람 덕분에 집중이 참 잘 되었답니다. 귓가에는 지저귀는 새소리와 강아지와 노는 아이들의 웃음소리가 은은하게 들려오고, 풀 내음이 가득해서 그냥 누워만 있어도 스트레스가 다 녹아내리는 기분이었어요. 특별한 일을 하지 않아도 온전히 쉴 수 있었던, 소소하지만 완벽한 주말 힐링 타임이었습니다.', mediaType: 'image', emoji: '', image: 'images/read_in_park2.jpg' },
         { id: 'default-12', date: '2026. 04. 18', title: '어릴 때 타던 그네 타기 😸', summary: '오랜만에 놀이터에서 신나게 그네 타며 하늘 높이 오르기. 동심으로 복귀!', detail: '학원 수업이 끝나고 집으로 걸어오는 길에, 단지 안 초등학교 앞 놀이터에 들러 오랜만에 그네에 앉았어요. 초등학생 때 친구들이랑 누가 더 높이 가나 시합하며 탔던 기억이 새록새록 떠올랐답니다. 발을 힘차게 구르며 앞으로 나아갈 때마다 얼굴을 스치는 시원한 저녁 바람과 몸이 붕 뜨는 짜릿한 기분이 너무 상쾌했어요! 가장 높은 정점에 도달했을 때 눈앞에 펼쳐진 붉은 노을빛 하늘이 참 아름다웠답니다. 바쁜 일상 속에서 잠시 어릴 적 아무 걱정 없던 동심으로 돌아가 활짝 웃을 수 있었던, 기분 좋은 쉼표 같은 저녁이었습니다.', mediaType: 'emoji', emoji: '😸', image: '' }
     ];
@@ -299,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 4. 다이어리 직접 쓰기 및 수정 (Firebase Storage 정식 연동)
+    // 4. 다이어리 직접 쓰기 및 수정 (Firebase Storage 연동 + 용량 압축 Blob 업로드)
     // -------------------------------------------------------------
     const toggleFormBtn = document.getElementById('toggle-diary-form');
     const formContainer = document.getElementById('diary-form-container');
@@ -483,9 +524,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 let imageUrl = '';
                 
                 if (mediaType === 'image' && fileInput.files && fileInput.files[0]) {
+                    // 고압축 리사이징을 거친 Blob 파일 생성
                     const file = fileInput.files[0];
-                    const ref = storage.ref().child('diaries/' + Date.now() + '_' + file.name);
-                    const snapshot = await ref.put(file);
+                    const compressedBlob = await compressImageToBlob(file, 1024, 0.75);
+                    
+                    const ref = storage.ref().child('diaries/' + Date.now() + '.jpg');
+                    const snapshot = await ref.put(compressedBlob);
                     imageUrl = await snapshot.ref.getDownloadURL();
                 }
 
@@ -596,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* ==========================================
-       5. 독립적인 사진첩 (Photos) 기능 및 원본 뷰어/수정 (Firebase Storage 정식 연동)
+       5. 독립적인 사진첩 (Photos) 기능 및 원본 뷰어/수정 (Firebase Storage 연동 + 용량 압축 Blob 업로드)
        ========================================== */
     const togglePhotoFormBtn = document.getElementById('toggle-photo-form');
     const photoFormContainer = document.getElementById('photo-form-container');
@@ -634,8 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (togglePhotoFormBtn) togglePhotoFormBtn.textContent = '❌ 작성 취소';
                 editPhotoTargetId = '';
                 photoForm.querySelector('button[type="submit"]').textContent = '사진첩에 등록하기 💖';
-            }
-            if (photoFormContainer) {
+            }            if (photoFormContainer) {
                 photoFormContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         });
@@ -731,8 +774,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 let fileUrl = '';
                 if (fileInput.files && fileInput.files[0]) {
                     const file = fileInput.files[0];
-                    const ref = storage.ref().child('photos/' + Date.now() + '_' + file.name);
-                    const snapshot = await ref.put(file);
+                    const compressedBlob = await compressImageToBlob(file, 1024, 0.75);
+                    
+                    const ref = storage.ref().child('photos/' + Date.now() + '.jpg');
+                    const snapshot = await ref.put(compressedBlob);
                     fileUrl = await snapshot.ref.getDownloadURL();
                 }
 
