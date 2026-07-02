@@ -7,6 +7,22 @@
 // HTML 문서가 완전히 불러와지면 스크립트 실행
 document.addEventListener('DOMContentLoaded', () => {
     
+    // -------------------------------------------------------------
+    // 관리자 비밀번호 보호 기능 (수아 패밀리 전용 비밀번호)
+    // -------------------------------------------------------------
+    const ADMIN_PASSWORD = 'suah1004'; // 수아홈 마스터 비밀번호 (필요시 변경 가능)
+
+    function checkAdminPermission() {
+        const input = prompt('관리자 비밀번호를 입력해 주세요 🔐');
+        if (input === null) return false; // 취소 누른 경우
+        if (input === ADMIN_PASSWORD) {
+            return true;
+        } else {
+            alert('비밀번호가 올바르지 않아 관리자 권한이 거부되었습니다! 🙅');
+            return false;
+        }
+    }
+    
     /* ==========================================
        1. 다크 모드 (화면 테마 전환) 기능
        ========================================== */
@@ -492,6 +508,8 @@ document.addEventListener('DOMContentLoaded', () => {
         diaryForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            if (!checkAdminPermission()) return;
+
             const submitBtn = diaryForm.querySelector('button[type="submit"]');
             submitBtn.textContent = '업로드 중... ☁️';
             submitBtn.disabled = true;
@@ -565,6 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modalDeleteDiaryBtn) {
         modalDeleteDiaryBtn.addEventListener('click', async () => {
             if (!currentSelectedDiaryId) return;
+            if (!checkAdminPermission()) return;
             if (confirm('이 일기를 정말 삭제하시겠어요? 😢')) {
                 try {
                     if (currentSelectedDiaryId.startsWith('default-')) {
@@ -587,6 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modalEditDiaryBtn) {
         modalEditDiaryBtn.addEventListener('click', () => {
             if (!currentSelectedDiaryId) return;
+            if (!checkAdminPermission()) return;
             
             editDiaryTargetId = currentSelectedDiaryId;
             
@@ -731,6 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (photoForm) {
         photoForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!checkAdminPermission()) return;
 
             const submitBtn = photoForm.querySelector('button[type="submit"]');
             submitBtn.textContent = '업로드 중... ☁️';
@@ -796,6 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (viewerDeletePhotoBtn) {
         viewerDeletePhotoBtn.addEventListener('click', async () => {
             if (!currentSelectedPhotoSrc) return;
+            if (!checkAdminPermission()) return;
             if (confirm('이 사진을 사진첩에서 정말 삭제하시겠어요? 😢')) {
                 try {
                     if (currentSelectedPhotoSrc.startsWith('default-')) {
@@ -818,6 +840,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (viewerEditPhotoBtn) {
         viewerEditPhotoBtn.addEventListener('click', () => {
             if (!currentSelectedPhotoSrc) return;
+            if (!checkAdminPermission()) return;
             
             editPhotoTargetId = currentSelectedPhotoSrc;
             
@@ -881,6 +904,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             card.querySelector('.edit-gb-btn').addEventListener('click', async (e) => {
                 e.stopPropagation();
+                if (!checkAdminPermission()) return;
                 
                 const newNickname = prompt('수정할 작성자 닉네임을 적어주세요:', item.nickname);
                 if (newNickname === null) return;
@@ -914,6 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             card.querySelector('.delete-gb-btn').addEventListener('click', async (e) => {
                 e.stopPropagation();
+                if (!checkAdminPermission()) return;
                 if (confirm('이 방명록 글을 삭제하시겠어요? 😢')) {
                     try {
                         if (item.id.startsWith('default-')) {
