@@ -407,23 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderDiaries() {
         if (!galleryGrid) return;
         
-        galleryGrid.innerHTML = `
-            <div class="gallery-item add-card" id="add-diary-card">
-                <div class="add-card-icon">➕</div>
-                <p>새 일기 작성하기</p>
-            </div>
-        `;
-
-        const addCardNode = document.getElementById('add-diary-card');
-        if (addCardNode) {
-            addCardNode.addEventListener('click', () => {
-                if (formContainer && formContainer.style.display === 'none') {
-                    formContainer.style.display = 'block';
-                    if (toggleFormBtn) toggleFormBtn.textContent = '❌ 작성 취소';
-                }
-                if (formContainer) formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-        }
+        galleryGrid.innerHTML = '';
 
         const visibleDefaults = defaultDiaries.filter(d => !dbDeletedIds.includes(d.id)).map(d => {
             if (dbEditedContents[d.id]) {
@@ -711,23 +695,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPhotos() {
         if (!photosGrid) return;
         
-        photosGrid.innerHTML = `
-            <div class="photo-card add-card" id="add-photo-card">
-                <div class="add-card-icon">➕</div>
-                <p>새 사진 올리기</p>
-            </div>
-        `;
-
-        const addCardNode = document.getElementById('add-photo-card');
-        if (addCardNode) {
-            addCardNode.addEventListener('click', () => {
-                if (photoFormContainer && photoFormContainer.style.display === 'none') {
-                    photoFormContainer.style.display = 'block';
-                    if (togglePhotoFormBtn) togglePhotoFormBtn.textContent = '❌ 작성 취소';
-                }
-                if (photoFormContainer) photoFormContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-        }
+        photosGrid.innerHTML = '';
 
         const visibleDefaults = defaultPhotos.filter(p => !dbDeletedIds.includes(p.id)).map(p => {
             if (dbEditedContents[p.id]) {
