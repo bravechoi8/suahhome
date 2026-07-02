@@ -1616,53 +1616,63 @@ async function geocodeCity(q){
   const searchGeo = async (name) => {
     const cleanName = name.replace(/[&>]/g, '').trim();
     if (!cleanName) return null;
-    const url = 'https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(cleanName) + '&count=5&language=ko&format=json';
-    const r = await fetch(url);
-    if (!r.ok) return null;
-    const d = await r.json();
-    if (!d.results || !d.results.length) return null;
     
-    // 한국(KR)인 경우, 하위 면/리 단위는 제외하되, '구'의 경우 자치구(강남구 등)만 허용하고 비자치구(분당구 등)는 제외
-    const filteredResults = d.results.filter(res => {
-      if (res.country_code === 'KR') {
-        const name = res.name || '';
-        const admin3 = res.admin3 || '';
-        
-        // 면/리 단위는 무조건 제외
-        const isMyeonOrRi = 
-          name.endsWith('면') || name.endsWith('리') || 
-          admin3.endsWith('면') || admin3.endsWith('리') ||
-          /[- ]?(myeon|ri)$/i.test(name) || /[- ]?(myeon|ri)$/i.test(admin3);
+    // 헬퍼: 실제 API 요청 및 필터링 수행부
+    const fetchGeo = async (queryName) => {
+      const url = 'https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(queryName) + '&count=5&language=ko&format=json';
+      const r = await fetch(url);
+      if (!r.ok) return null;
+      const d = await r.json();
+      if (!d.results || !d.results.length) return null;
+      
+      const filtered = d.results.filter(res => {
+        if (res.country_code === 'KR') {
+          const n = res.name || '';
+          const a3 = res.admin3 || '';
           
-        if (isMyeonOrRi) return false;
+          // 면/리 단위는 무조건 제외
+          const isMyeonOrRi = 
+            n.endsWith('면') || n.endsWith('리') || 
+            a3.endsWith('면') || a3.endsWith('리') ||
+            /[- ]?(myeon|ri)$/i.test(n) || /[- ]?(myeon|ri)$/i.test(a3);
+            
+          if (isMyeonOrRi) return false;
 
-        // '구' 단위의 비자치구만 선별 배제 (특별시/광역시에 속한 자치구는 검색 허용)
-        const isGu = name.endsWith('구') || admin3.endsWith('구') || /[- ]?gu$/i.test(name) || /[- ]?gu$/i.test(admin3);
-        if (isGu) {
-          const isMetropolitanGu = res.admin1 && (res.admin1.endsWith('시') || res.admin1.endsWith('City') || res.admin1.includes('Seoul') || res.admin1.includes('Metropolitan'));
-          if (!isMetropolitanGu) return false; // 경기도 성남시 분당구 같은 일반 시 산하의 구는 제외!
+          // '구' 단위의 비자치구 배제 (특별시/광역시에 속한 자치구는 검색 허용)
+          const isGu = n.endsWith('구') || a3.endsWith('구') || /[- ]?gu$/i.test(n) || /[- ]?gu$/i.test(a3);
+          if (isGu) {
+            const isMetropolitanGu = res.admin1 && (res.admin1.endsWith('시') || res.admin1.endsWith('City') || res.admin1.includes('Seoul') || res.admin1.includes('Metropolitan'));
+            if (!isMetropolitanGu) return false;
+          }
         }
+        return true;
+      });
+      
+      if (!filtered.length) return null;
+      
+      let g = filtered[0];
+      const pplResults = filtered.filter(res => res.feature_code && res.feature_code.startsWith('PPL'));
+      if (pplResults.length > 0) {
+        const krPpl = pplResults.find(res => res.country_code === 'KR' && res.admin2 && (res.admin2.endsWith('시') || res.admin2.endsWith('군')));
+        g = krPpl || pplResults[0];
       }
-      return true;
-    });
+      return g;
+    };
 
-    if (!filteredResults.length) return null;
-
-    // 필터링된 결과 중 PPL (인구 밀집지) 우선순위로 선정
-    let g = filteredResults[0];
-    const pplResults = filteredResults.filter(res => res.feature_code && res.feature_code.startsWith('PPL'));
-    if (pplResults.length > 0) {
-      const krPpl = pplResults.find(res => res.country_code === 'KR' && res.admin2 && (res.admin2.endsWith('시') || res.admin2.endsWith('군')));
-      g = krPpl || pplResults[0];
+    // 1차 시도: 원래 번역된 이름으로 검색
+    let g = await fetchGeo(cleanName);
+    
+    // 2차 시도: 한국 도심지인데 뒤에 -si 가 붙어야만 조회되는 경우 보정 (예: Seongnam -> Seongnam-si)
+    if (!g || (g.country_code === 'KR' && g.admin2 && !g.admin2.endsWith('시') && !g.admin2.endsWith('군') && !cleanName.endsWith('-si') && !cleanName.endsWith('-gun'))) {
+      const gSi = await fetchGeo(cleanName + '-si');
+      if (gSi) g = gSi;
     }
+
+    if (!g) return null;
     
     let displayName = g.name;
-    
-    // 한국 지역(KR) 보정: 구 단위가 아닌 시/군 단위를 우선적으로 화면 표시 이름으로 설정
     if (g.country_code === 'KR') {
       if (g.admin2 && (g.admin2.endsWith('시') || g.admin2.endsWith('군'))) {
-        displayName = g.admin2;
-      } else if (g.admin2) {
         displayName = g.admin2;
       }
     }
