@@ -995,10 +995,6 @@ body.dark-mode .modal-content {
         padding: 0 16px;
     }
 
-    .nav-menu {
-        display: none; /* 모바일에서는 일단 메뉴를 심플하게 숨깁니다 */
-    }
-
     .hero-container {
         grid-template-columns: 1fr; /* 화면 1단으로 쌓기 */
         text-align: center;

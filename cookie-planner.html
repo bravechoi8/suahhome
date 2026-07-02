@@ -1662,8 +1662,15 @@ async function geocodeCity(q){
     // 1차 시도: 원래 번역된 이름으로 검색
     let g = await fetchGeo(cleanName);
     
-    // 2차 시도: 한국 도심지인데 뒤에 -si 가 붙어야만 조회되는 경우 보정 (예: Seongnam -> Seongnam-si)
-    if (!g || (g.country_code === 'KR' && g.admin2 && !g.admin2.endsWith('시') && !g.admin2.endsWith('군') && !cleanName.endsWith('-si') && !cleanName.endsWith('-gun'))) {
+    // 2차 시도: 결과 이름이 Seongnam-si 처럼 완벽히 매칭되지 않는 등 대도시가 아닐 경우 뒤에 -si 를 붙여 재조회
+    const needsSiSuffix = 
+      !g || 
+      (g.country_code === 'KR' && 
+       (g.name.toLowerCase() !== cleanName.toLowerCase() + '-si') && 
+       (!g.admin2 || (!g.admin2.endsWith('시') && g.admin2 !== cleanName))
+      );
+
+    if (needsSiSuffix && !cleanName.endsWith('-si') && !cleanName.endsWith('-gun')) {
       const gSi = await fetchGeo(cleanName + '-si');
       if (gSi) g = gSi;
     }
