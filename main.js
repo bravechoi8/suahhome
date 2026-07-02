@@ -481,6 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 diaryModal.classList.add('show');
                 document.body.style.overflow = 'hidden';
+                history.pushState({ modal: 'diary' }, '');
             });
 
             galleryGrid.appendChild(card);
@@ -690,6 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
         viewerTitle.textContent = title;
         photoViewerModal.classList.add('show');
         document.body.style.overflow = 'hidden';
+        history.pushState({ modal: 'photo' }, '');
     }
 
     function renderPhotos() {
@@ -1007,5 +1009,31 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 초기 기동
     handleTabChange();
+
+    // 하단 닫기 단추들의 이벤트 위임 연동
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('close-modal-btn')) {
+            closeModal();
+            if (history.state && history.state.modal === 'diary') {
+                history.back();
+            }
+        }
+        if (e.target.classList.contains('close-viewer-btn')) {
+            closePhotoViewer();
+            if (history.state && history.state.modal === 'photo') {
+                history.back();
+            }
+        }
+    });
+
+    // 스마트폰 하드웨어/제스처 뒤로가기 시 모달창 자동 닫기 처리 (History API)
+    window.addEventListener('popstate', (event) => {
+        if (diaryModal && diaryModal.classList.contains('show')) {
+            closeModal();
+        }
+        if (photoViewerModal && photoViewerModal.classList.contains('show')) {
+            closePhotoViewer();
+        }
+    });
 
 });

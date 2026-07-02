@@ -1397,4 +1397,26 @@ body.dark-mode .photo-card.add-card:hover {
     main {
         padding-top: 50px;
     }
+    /* 모바일 모달 닫기 버튼 접근성 보강 */
+    .close-button {
+        right: 15px !important;
+        top: 15px !important;
+        width: 40px !important;
+        height: 40px !important;
+        background-color: rgba(255, 255, 255, 0.85) !important;
+        color: #333333 !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.18) !important;
+        font-size: 1.8rem !important;
+        z-index: 9999 !important;
+        font-weight: bold !important;
+    }
+    body.dark-mode .close-button {
+        background-color: rgba(30, 20, 40, 0.9) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    }
 }
