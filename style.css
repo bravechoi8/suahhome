@@ -1357,3 +1357,48 @@ body.dark-mode .gallery-item.add-card:hover,
 body.dark-mode .photo-card.add-card:hover {
     background: rgba(255, 111, 145, 0.1);
 }
+
+/* ==========================================
+   8. 모바일 반응형 미디어 쿼리 (탭 메뉴 완벽 노출)
+   ========================================== */
+@media (max-width: 768px) {
+    .navbar {
+        height: auto !important;
+        padding: 10px 0;
+    }
+    .nav-container {
+        flex-direction: column !important;
+        gap: 10px;
+        padding: 0 12px !important;
+    }
+    .nav-menu {
+        gap: 10px 14px !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        width: 100%;
+    }
+    .nav-link {
+        font-size: 0.9rem !important;
+        padding: 6px 10px !important;
+        background-color: var(--accent-light);
+        border-radius: 15px;
+        display: inline-block;
+    }
+    .theme-btn {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+    }
+    .logo {
+        font-size: 1.25rem !important;
+        margin-right: 40px; /* 테마 버튼과 겹침 방지 */
+    }
+    /* 영웅 섹션 및 본문 탑 패딩 보정 */
+    .hero-section {
+        padding-top: 130px !important;
+    }
+    /* 활성화된 탭 콘텐츠 패딩 보정 */
+    main {
+        padding-top: 50px;
+    }
+}
