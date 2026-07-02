@@ -1654,6 +1654,28 @@ async function geocodeCity(q){
   let res = await searchGeo(query);
   if (res) return res;
 
+  // 1.5단계: 로마자 표기법 엇갈림 보정 (초성 G->K, D->T, B->P, J->Ch 교체 시도)
+  // 예: 번역기가 Gimhae 를 반환했으나 Open-Meteo DB 에는 Kimhae 로 등록되어 있을 때 우회
+  if (/^[A-Za-z]/.test(query)) {
+    const firstChar = query.charAt(0);
+    const rest = query.slice(1);
+    let swappedQuery = query;
+    
+    if (firstChar === 'G') swappedQuery = 'K' + rest;
+    else if (firstChar === 'g') swappedQuery = 'k' + rest;
+    else if (firstChar === 'D') swappedQuery = 'T' + rest;
+    else if (firstChar === 'd') swappedQuery = 't' + rest;
+    else if (firstChar === 'B') swappedQuery = 'P' + rest;
+    else if (firstChar === 'b') swappedQuery = 'p' + rest;
+    else if (firstChar === 'J') swappedQuery = 'Ch' + rest;
+    else if (firstChar === 'j') swappedQuery = 'ch' + rest;
+    
+    if (swappedQuery !== query) {
+      res = await searchGeo(swappedQuery);
+      if (res) return res;
+    }
+  }
+
   // 2단계: 콤마(,)가 포함된 주소인 경우 쪼개서 뒤쪽 파트부터 검색해봅니다 (예: "Suji-gu, Yongin-si" -> "Yongin-si")
   if (query.includes(',')) {
     const parts = query.split(',').map(p => p.trim()).filter(Boolean);
