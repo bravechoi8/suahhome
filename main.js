@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // -------------------------------------------------------------
     // 관리자 비밀번호 보호 기능 (수아 패밀리 전용 비밀번호)
     // -------------------------------------------------------------
-    const ADMIN_PASSWORD = 'suah1004'; // 수아홈 마스터 비밀번호 (필요시 변경 가능)
+    const ADMIN_PASSWORD = '6262'; // 수아홈 마스터 비밀번호 (필요시 변경 가능)
 
     function checkAdminPermission() {
         const input = prompt('관리자 비밀번호를 입력해 주세요 🔐');
