@@ -1622,19 +1622,26 @@ async function geocodeCity(q){
     const d = await r.json();
     if (!d.results || !d.results.length) return null;
     
-    // 한국(KR)인 경우, 구/면/리 단위(예: 수정구, 성남리, 보은면 등)의 하위 주소지는 검색 후보군에서 원천 제외
+    // 한국(KR)인 경우, 하위 면/리 단위는 제외하되, '구'의 경우 자치구(강남구 등)만 허용하고 비자치구(분당구 등)는 제외
     const filteredResults = d.results.filter(res => {
       if (res.country_code === 'KR') {
         const name = res.name || '';
         const admin3 = res.admin3 || '';
         
-        // 한글이나 영문으로 '구', '면', '리'로 끝나는지 검사
-        const isGuMyeonOrRi = 
-          name.endsWith('구') || name.endsWith('면') || name.endsWith('리') || 
-          admin3.endsWith('구') || admin3.endsWith('면') || admin3.endsWith('리') ||
-          /[- ]?(gu|myeon|ri)$/i.test(name) || /[- ]?(gu|myeon|ri)$/i.test(admin3);
+        // 면/리 단위는 무조건 제외
+        const isMyeonOrRi = 
+          name.endsWith('면') || name.endsWith('리') || 
+          admin3.endsWith('면') || admin3.endsWith('리') ||
+          /[- ]?(myeon|ri)$/i.test(name) || /[- ]?(myeon|ri)$/i.test(admin3);
           
-        if (isGuMyeonOrRi) return false;
+        if (isMyeonOrRi) return false;
+
+        // '구' 단위의 비자치구만 선별 배제 (특별시/광역시에 속한 자치구는 검색 허용)
+        const isGu = name.endsWith('구') || admin3.endsWith('구') || /[- ]?gu$/i.test(name) || /[- ]?gu$/i.test(admin3);
+        if (isGu) {
+          const isMetropolitanGu = res.admin1 && (res.admin1.endsWith('시') || res.admin1.endsWith('City') || res.admin1.includes('Seoul') || res.admin1.includes('Metropolitan'));
+          if (!isMetropolitanGu) return false; // 경기도 성남시 분당구 같은 일반 시 산하의 구는 제외!
+        }
       }
       return true;
     });
