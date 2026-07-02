@@ -1622,11 +1622,29 @@ async function geocodeCity(q){
     const d = await r.json();
     if (!d.results || !d.results.length) return null;
     
-    // PPL (인구 밀집지/도시)이면서 admin2(시/군) 명칭 매치가 잘되는 결과를 최우선으로 선정
-    let g = d.results[0];
-    const pplResults = d.results.filter(res => res.feature_code && res.feature_code.startsWith('PPL'));
+    // 한국(KR)인 경우, 면/리 단위(예: 성남리, 보은면 등)의 하위 주소지는 검색 후보군에서 원천 제외
+    const filteredResults = d.results.filter(res => {
+      if (res.country_code === 'KR') {
+        const name = res.name || '';
+        const admin3 = res.admin3 || '';
+        
+        // 한글이나 영문으로 '면', '리'로 끝나는지 검사
+        const isMyeonOrRi = 
+          name.endsWith('면') || name.endsWith('리') || 
+          admin3.endsWith('면') || admin3.endsWith('리') ||
+          /[- ]?(myeon|ri)$/i.test(name) || /[- ]?(myeon|ri)$/i.test(admin3);
+          
+        if (isMyeonOrRi) return false;
+      }
+      return true;
+    });
+
+    if (!filteredResults.length) return null;
+
+    // 필터링된 결과 중 PPL (인구 밀집지) 우선순위로 선정
+    let g = filteredResults[0];
+    const pplResults = filteredResults.filter(res => res.feature_code && res.feature_code.startsWith('PPL'));
     if (pplResults.length > 0) {
-      // 한국(KR)인 경우 경기도 성남시 같은 행정구역을 선호하도록 매칭
       const krPpl = pplResults.find(res => res.country_code === 'KR' && res.admin2 && (res.admin2.endsWith('시') || res.admin2.endsWith('군')));
       g = krPpl || pplResults[0];
     }
