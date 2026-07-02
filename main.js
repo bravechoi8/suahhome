@@ -195,6 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const storage = firebase.storage();
 
     // 전역 트래킹 변수
     let currentSelectedDiaryId = '';
@@ -210,42 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let dbCustomGuestbook = [];
     let dbDeletedIds = [];
     let dbEditedContents = {};
-
-    // -------------------------------------------------------------
-    // 이미지 용량 압축 헬퍼 함수 (카드 등록 필수인 Storage 를 우회하기 위한 예술적 우회기법)
-    // -------------------------------------------------------------
-    function compressImage(file, maxWidth = 800, quality = 0.75) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > maxWidth) {
-                        height = Math.round((height * maxWidth) / width);
-                        width = maxWidth;
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    // 용량이 10분의 1 이하로 주는 고압축 JPEG 포맷 변환
-                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-                    resolve(compressedDataUrl);
-                };
-                img.onerror = (err) => reject(err);
-            };
-            reader.onerror = (err) => reject(err);
-        });
-    }
 
     // -------------------------------------------------------------
     // 기본 정적 데이터셋 정의
@@ -334,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 4. 다이어리 직접 쓰기 및 수정 (Canvas 압축 연동)
+    // 4. 다이어리 직접 쓰기 및 수정 (Firebase Storage 정식 연동)
     // -------------------------------------------------------------
     const toggleFormBtn = document.getElementById('toggle-diary-form');
     const formContainer = document.getElementById('diary-form-container');
@@ -518,8 +483,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 let imageUrl = '';
                 
                 if (mediaType === 'image' && fileInput.files && fileInput.files[0]) {
-                    // 고압축 Canvas 리사이징 적용하여 데이터베이스에 직접 저장
-                    imageUrl = await compressImage(fileInput.files[0], 800, 0.7);
+                    const file = fileInput.files[0];
+                    const ref = storage.ref().child('diaries/' + Date.now() + '_' + file.name);
+                    const snapshot = await ref.put(file);
+                    imageUrl = await snapshot.ref.getDownloadURL();
                 }
 
                 if (editDiaryTargetId) {
@@ -629,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* ==========================================
-       5. 독립적인 사진첩 (Photos) 기능 및 원본 뷰어/수정 (Canvas 압축 연동)
+       5. 독립적인 사진첩 (Photos) 기능 및 원본 뷰어/수정 (Firebase Storage 정식 연동)
        ========================================== */
     const togglePhotoFormBtn = document.getElementById('toggle-photo-form');
     const photoFormContainer = document.getElementById('photo-form-container');
@@ -763,8 +730,10 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 let fileUrl = '';
                 if (fileInput.files && fileInput.files[0]) {
-                    // 고압축 Canvas 리사이징 적용하여 데이터베이스에 직접 저장
-                    fileUrl = await compressImage(fileInput.files[0], 800, 0.7);
+                    const file = fileInput.files[0];
+                    const ref = storage.ref().child('photos/' + Date.now() + '_' + file.name);
+                    const snapshot = await ref.put(file);
+                    fileUrl = await snapshot.ref.getDownloadURL();
                 }
 
                 if (editPhotoTargetId) {
