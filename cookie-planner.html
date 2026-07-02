@@ -1622,19 +1622,19 @@ async function geocodeCity(q){
     const d = await r.json();
     if (!d.results || !d.results.length) return null;
     
-    // 한국(KR)인 경우, 면/리 단위(예: 성남리, 보은면 등)의 하위 주소지는 검색 후보군에서 원천 제외
+    // 한국(KR)인 경우, 구/면/리 단위(예: 수정구, 성남리, 보은면 등)의 하위 주소지는 검색 후보군에서 원천 제외
     const filteredResults = d.results.filter(res => {
       if (res.country_code === 'KR') {
         const name = res.name || '';
         const admin3 = res.admin3 || '';
         
-        // 한글이나 영문으로 '면', '리'로 끝나는지 검사
-        const isMyeonOrRi = 
-          name.endsWith('면') || name.endsWith('리') || 
-          admin3.endsWith('면') || admin3.endsWith('리') ||
-          /[- ]?(myeon|ri)$/i.test(name) || /[- ]?(myeon|ri)$/i.test(admin3);
+        // 한글이나 영문으로 '구', '면', '리'로 끝나는지 검사
+        const isGuMyeonOrRi = 
+          name.endsWith('구') || name.endsWith('면') || name.endsWith('리') || 
+          admin3.endsWith('구') || admin3.endsWith('면') || admin3.endsWith('리') ||
+          /[- ]?(gu|myeon|ri)$/i.test(name) || /[- ]?(gu|myeon|ri)$/i.test(admin3);
           
-        if (isMyeonOrRi) return false;
+        if (isGuMyeonOrRi) return false;
       }
       return true;
     });
