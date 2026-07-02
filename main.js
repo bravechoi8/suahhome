@@ -181,7 +181,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ==========================================
 
-    // 전역 선택 및 삭제/수정 대상 트래킹용 변수
+    // -------------------------------------------------------------
+    // Firebase 초기화 및 설정 (사용자 Config 연동)
+    // -------------------------------------------------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyC85DTKsENUKGhcGN6SIq4mfoEZnSmazrE",
+      authDomain: "suahhome-3151e.firebaseapp.com",
+      projectId: "suahhome-3151e",
+      storageBucket: "suahhome-3151e.firebasestorage.app",
+      messagingSenderId: "198234928791",
+      appId: "1:198234928791:web:7049a8b45fcf1d70c5dbd2",
+      measurementId: "G-V498W3W9VX"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // 전역 트래킹 변수
     let currentSelectedDiaryId = '';
     let currentSelectedPhotoSrc = ''; // 실제로는 photoCard 의 id 를 담음
     
@@ -189,9 +205,107 @@ document.addEventListener('DOMContentLoaded', () => {
     let editDiaryTargetId = '';
     let editPhotoTargetId = '';
 
-    /* ==========================================
-       4. 다이어리 직접 쓰기 및 수정 (스마트폰/PC 사진 선택 지원)
-       ========================================== */
+    // 실시간 구독용 스토어 데이터
+    let dbCustomDiaries = [];
+    let dbCustomPhotos = [];
+    let dbCustomGuestbook = [];
+    let dbDeletedIds = [];
+    let dbEditedContents = {};
+
+    // -------------------------------------------------------------
+    // 기본 정적 데이터셋 정의
+    // -------------------------------------------------------------
+    const defaultDiaries = [
+        { id: 'default-1', date: '2026. 06. 26', title: '드디어 시험 끝! 😆', summary: '친구들이랑 다 같이 떡볶이 먹고 코인 노래방에서 목청껏 부른 행복했던 날!', detail: '중학교에 입학하고 나서 처음으로 치른 시험이라 걱정이 정말 많았어요. 전날 밤새도록 수학이랑 영어를 외우느라 눈이 피곤했는데, 드디어 시험이 모두 끝나서 날아갈 것 같았어요! 민지랑 유진이랑 시험이 끝나자마자 벼르고 벼르던 학교 앞 떡볶이집으로 뛰어가서 마라 떡볶이랑 튀김을 배 터지게 먹었답니다. 그리고 코인 노래방에 가서 최신 댄스 곡부터 잔잔한 팝송까지 거의 목이 쉴 때까지 불렀어요. 오늘 하루는 성적 생각하지 않고 온전히 재미있게 놀았어요. 중학교 생활 중 가장 스트레스가 다 날아간 최고의 하루였습니다!', mediaType: 'emoji', emoji: '🎒', image: '' },
+        { id: 'default-2', date: '2026. 06. 20', title: '소품샵 털고 온 날 💸', summary: '새로 나온 고양이 캐릭터 스티커랑 투명 다이어리 커버 득템! 다꾸 열정 충전 완료.', detail: '요즘 SNS에서 핫하다는 동네 감성 소품샵에 다녀왔어요! 예쁜 문구류와 아기자기한 리빙 소품이 가득해서 들어가자마자 눈이 휘둥그레졌답니다. 한참을 고민하다가 내 일기장을 꾸밀 다꾸용품들을 몇 개 샀어요. 특히 제가 정말 좋아하는 귀여운 뚱보 고양이 캐릭터가 그려진 다색 스티커 세트와 반짝이는 펄이 들어간 마스킹 테이프, 그리고 이번 여름 테마의 투명 다이어리 커버를 샀어요. 집에 오자마자 침대 밑에 판을 깔고 산 것들을 하나하나 붙이면서 다이어리를 정리했는데, 제 취향으로 꽉 채워진 다이어리를 보니까 소소하지만 너무 행복하고 뿌듯했어요. 열심히 일기를 써야겠다고 다시 한번 다짐한 날이었어요!', mediaType: 'emoji', emoji: '🛍️', image: '' },
+        { id: 'default-3', date: '2026. 06. 15', title: '중학교 첫 동아리 시간!', summary: '평소 눈여겨보던 도서감상반 가입. 조용한 도서실에서 책 냄새 맡으며 한 컷.', detail: "중학교 입학식 날부터 선배들이 추천해주었던 인기 동아리인 '도서감상반'에 드디어 가입해서 첫 활동을 시작했어요! 도서실로 가니 조용하고 차분한 클래식 음악이 흐르고 있었고, 책 냄새가 마음을 되게 편안하게 해 주었어요. 첫 시간에는 선생님께서 앞으로 한 학기 동안 읽고 감상할 책들을 소개해 주셨는데, 제가 읽고 싶었던 판타지 소설도 목록에 있어서 벌써부터 기대가 많이 돼요. 일주일에 한 번씩 이곳에 모여서 서로 책을 읽은 느낌을 이야기하고, 좋아하는 한 줄을 공유하는 시간을 가질 거래요. 평소에 집에서 혼자 책을 읽는 것도 좋아하지만, 친구들과 책으로 수다를 떨 수 있다는 게 너무 신기하고 설레는 첫 동아리 시간이었습니다.", mediaType: 'image', emoji: '', image: 'images/read_in_park.jpg' },
+        { id: 'default-4', date: '2026. 06. 09', title: '비 오는 타임스퀘어 ☔', summary: '뉴욕 여행 중 갑자기 쏟아진 비. 화려한 전광판 밑에서 비 구경하기.', detail: '가족들과 뉴욕 여행을 하던 도중, 갑자기 하늘이 어두워지더니 시원한 소나기가 쏟아졌어요! 마침 우리는 화려한 전광판들이 반짝이는 타임스퀘어 한가운데에 있었답니다. 우산을 급하게 펴고 서서 빗방울이 노란 택시 위로 떨어지는 모습을 구경했는데, 오히려 비가 오니까 전광판 불빛들이 젖은 도로에 반사되어 평소보다 훨씬 화려하고 로맨틱해 보였어요. 빗소리와 사람들의 웅성거림, 그리고 웅장한 타임스퀘어의 전경이 잊지 못할 독특한 분위기를 만들어 준 멋진 비 오는 뉴욕의 오후였습니다.', mediaType: 'image', emoji: '', image: 'images/newyork_1.jpg' },
+        { id: 'default-5', date: '2026. 06. 02', title: '체스 대회 본선 진출! ♟️', summary: '초집중해서 둔 체스 대국. 치열한 접전 끝에 드디어 본선행 티켓을 땄다!', detail: '몇 달 동안 열심히 방과 후 체스 교실에서 실력을 쌓으며 준비해 온 지역 청소년 체스 대회 예선 날이었어요. 첫 경기 상대부터 실력이 대단해서 심장이 아주 콩닥콩닥 뛰었답니다. 중반부에 퀸을 뺏길 뻔한 큰 위기가 있었지만, 침착하게 나이트를 활용해 묘수를 찾아내어 극적으로 외통수 승리를 거둘 수 있었어요! 내리 3연승을 거두면서 드디어 다음 달에 열리는 본선 진출권을 획득했답니다. 대회가 끝나고 선생님과 부모님께서 정말 잘했다고 안아주셨는데, 그동안 혼자 기보를 보며 치열하게 공부했던 노력들이 보상받는 기분이라 가슴이 벅차오른 뿌듯한 하루였습니다.', mediaType: 'image', emoji: '', image: 'images/chess_3.jpg' },
+        { id: 'default-6', date: '2026. 05. 28', title: '뮤지컬 해리포터 관람 ⚡', summary: '오랫동안 기다렸던 연극! 마법 효과들이 눈앞에서 실시간으로 펼쳐져서 소름.', detail: "좋아하는 소설이자 영화인 '해리포터와 저주받은 아이' 연극 공연을 드디어 보러 간 날이었어요! 극장 로비에 들어가자마자 웅장한 그리핀도르 깃발들과 마법 지팡이 굿즈들이 가득해서 마치 제가 정말로 호그와트에 온 것 같은 착각이 들었답니다. 무대 위의 특수 효과들은 상상 그 이상이었어요. 사람들이 물속으로 뿅 사라지거나, 지팡이 끝에서 실제로 불꽃이 튀고 디멘터들이 객석 머리 위로 날아다닐 때마다 온몸에 소름이 돋았어요! 배우들의 실감 나는 연기력과 몰입감 넘치는 마법 같은 무대 연출 덕분에 5시간에 달하는 긴 러닝타임이 5분처럼 느껴진 평생 기억에 남을 꿈같은 문화생활 날이었습니다.", mediaType: 'image', emoji: '', image: 'images/harrypotter_1.jpg' },
+        { id: 'default-7', date: '2026. 05. 20', title: '세인트 패트릭 성당 방문', summary: '뉴욕 한복판에 우뚝 솟은 고딕 양식 성당. 거대한 스테인드글라스에 압도당함.', detail: '뉴욕 5번가를 걷다가 현대적인 빌딩들 사이에 우뚝 솟아 있는 거대한 석조 건물인 세인트 패트릭 대성당에 들어갔어요. 문을 열고 한 걸음 들어가자마자 바깥의 시끄러운 경적 소리가 뚝 끊기고, 웅장하고 성스러운 공기가 온몸을 감쌌답니다. 하늘 높이 솟아 있는 뾰족한 천장 아치들과 벽면을 가득 채운 화려한 스테인드글라스를 통해 들어오는 은은한 무지갯빛 햇살이 너무 신비롭고 아름다웠어요. 한쪽에 마련된 촛대에 작은 초를 하나 밝히고 가족들의 건강과 나의 소소한 소원들을 빌며 조용히 마음을 가다듬는 경건하고 차분한 힐링의 시간을 보냈습니다.', mediaType: 'image', emoji: '', image: 'images/stpatrick_1.jpg' },
+        { id: 'default-8', date: '2026. 05. 14', title: '체스 경기 복기하는 중 💭', summary: '패배한 판 분석하기. 상대방의 비숍 전술에 당했지만 다음엔 안 져!', detail: '어제 동아리 대국에서 아쉽게 패배했던 체스 판을 오늘 집 책상에서 혼자 조용히 복기해 보았어요. 당시에는 몰랐는데, 비숍을 킹사이드로 성급하게 전진시켰던 게 상대방 룩에게 중앙 통로를 통째로 내주는 결정적인 패착이었더라고요. 폰 구조를 무너뜨리지 않으면서 차분히 캐슬링을 먼저 해두었더라면 어땠을까 하는 아쉬움이 남았지만, 패배 원인을 정확히 짚어냈으니 다음 대국에서는 똑같은 실수를 하지 않을 거예요! 체스는 이길 때보다 질 때 배우는 게 더 많다는 선생님의 말씀이 마음에 와닿은, 한층 더 진지하게 성장한 하루였습니다.', mediaType: 'image', emoji: '', image: 'images/chess_2.jpg' },
+        { id: 'default-9', date: '2026. 05. 08', title: '뉴욕 스트리트 한복판에서 📸', summary: '노란 옐로우캡과 고층 빌딩들. 어디를 찍어도 한 폭의 엽서 같은 멋진 뉴욕.', detail: '뉴욕의 5번가를 가족들과 천천히 걷다가, 햇살이 고층 빌딩 틈새로 쏟아지는 사거리 횡단보도 앞에서 멈춰 섰어요. 길가에는 뉴욕의 상징인 노란 택시들이 줄지어 빵빵거리며 달리고 있고, 전 세계에서 온 다양한 사람들이 바쁘게 걸어가고 있었는데 그 열기 가득한 분위기가 저를 너무 신나게 만들었어요! 마침 빌딩 숲 위로 파란 하늘이 너무 맑게 드러나서 신호등 기둥 옆에 서서 환하게 웃으며 인생샷 한 장을 남겼답니다. 어딜 가나 영화 속 스크린에 들어와 있는 듯한 기분을 안겨주는 뉴욕 거리의 멋진 순간이었습니다.', mediaType: 'image', emoji: '', image: 'images/stpatrick_2.jpg' },
+        { id: 'default-10', date: '2026. 05. 01', title: '해리포터 오리지널 굿즈 쇼핑 🛍️', summary: '극장 굿즈 매장에서 그리핀도르 목도리랑 지팡이 구매! 나도 이제 마법사.', detail: '뮤지컬 해리포터 공연이 끝나고 흥분이 채 가시지 않은 상태에서 극장 내 공식 기념품 샵으로 향했어요! 진열대에는 캐릭터별 마법 지팡이와 호그와트 기숙사 유니폼들이 가득해서 지갑을 열지 않을 수가 없었답니다. 고민 끝에 제가 가장 좋아하는 기숙사인 그리핀도르의 상징색인 붉은색과 금색이 번갈아 들어간 따뜻한 털목도리와 주인공 해리포터의 마법 지팡이를 샀어요. 목도리를 목에 칭칭 감고 지팡이를 손에 쥐고 포즈를 취하니까 정말로 9와 4분의 3 승강장을 통과한 마법사가 된 것처럼 하루 종일 행복했습니다.', mediaType: 'image', emoji: '', image: 'images/harrypotter_2.jpg' },
+        { id: 'default-11', date: '2026. 04. 25', title: '날씨 좋은 날 공원 나들이 🍃', summary: '호숫가 벤치에 앉아서 시원한 바람맞기. 책 한 권 들고 힐링하기 딱 좋은 곳.', detail: '주말 아침, 따스한 봄 햇살이 방 안까지 가득 들어와서 근처 호수공원으로 돗자리와 책을 챙겨 나갔어요. 푸른 잔디밭 위에 자리를 펴고 엎드려서 평소에 바빠서 읽지 못했던 판타지 소설책을 펼쳤는데, 호수 위로 살랑살랑 불어오는 시원한 바람 덕분에 집중이 참 잘 되었답니다. 귓가에는 지저귀는 새소리와 강아지와 노는 아이들의 웃음소리가 은은하게 들려오고, 풀 내음이 가득해서 그냥 누워만 있어도 스트레스가 다 녹아내리는 기분이었어요. 특별한 일을 하지 않아도 온전히 쉴 수 있었던, 소소하지만 완벽한 주말 힐링 타임이었습니다.', mediaType: 'image', emoji: '', image: 'images/read_in_park2.jpg' },
+        { id: 'default-12', date: '2026. 04. 18', title: '어릴 때 타던 그네 타기 😸', summary: '오랜만에 놀이터에서 신나게 그네 타며 하늘 높이 오르기. 동심으로 복귀!', detail: '학원 수업이 끝나고 집으로 걸어오는 길에, 단지 안 초등학교 앞 놀이터에 들러 오랜만에 그네에 앉았어요. 초등학생 때 친구들이랑 누가 더 높이 가나 시합하며 탔던 기억이 새록새록 떠올랐답니다. 발을 힘차게 구르며 앞으로 나아갈 때마다 얼굴을 스치는 시원한 저녁 바람과 몸이 붕 뜨는 짜릿한 기분이 너무 상쾌했어요! 가장 높은 정점에 도달했을 때 눈앞에 펼쳐진 붉은 노을빛 하늘이 참 아름다웠답니다. 바쁜 일상 속에서 잠시 어릴 적 아무 걱정 없던 동심으로 돌아가 활짝 웃을 수 있었던, 기분 좋은 쉼표 같은 저녁이었습니다.', mediaType: 'emoji', emoji: '😸', image: '' }
+    ];
+
+    const defaultPhotos = [
+        { id: 'default-p-1', src: 'images/read_in_park.jpg', title: '햇살 좋은 날, 공원에서 독서 🌳' },
+        { id: 'default-p-2', src: 'images/newyork_1.jpg', title: '비 오는 뉴욕 타임스퀘어 🗽' },
+        { id: 'default-p-3', src: 'images/chess_3.jpg', title: '체스 대회, 초집중 모드! 🏆' },
+        { id: 'default-p-4', src: 'images/harrypotter_1.jpg', title: '브로드웨이 해리포터 연극 ⚡' },
+        { id: 'default-p-5', src: 'images/stpatrick_1.jpg', title: '뉴욕 세인트 패트릭 대성당 ⛪' },
+        { id: 'default-p-6', src: 'images/chess_2.jpg', title: '체스 경기 중 묘수 찾기 ♟️' },
+        { id: 'default-p-7', src: 'images/stpatrick_2.jpg', title: '성당 앞에서 찰칵! 📸' },
+        { id: 'default-p-8', src: 'images/harrypotter_2.jpg', title: '공연 시작 전 기대 가득! 😍' },
+        { id: 'default-p-9', src: 'images/read_in_park2.jpg', title: '호수 근처에서 힐링 타임 🍃' },
+        { id: 'default-p-10', src: 'images/chess_1.jpg', title: '체스 대회 시상대에서 🏆' },
+        { id: 'default-p-11', src: 'images/newyork_2.jpg', title: '뉴욕의 멋진 빌딩 숲 🏢' },
+        { id: 'default-p-12', src: 'images/harrypotter_3.jpg', title: '마법의 호그와트 성 성곽 🏰' },
+        { id: 'default-p-13', src: 'images/hero.png', title: '수아의 다이어리 홈 일러스트 🎨' }
+    ];
+
+    const defaultGuestbook = [
+        { id: 'default-gb-1', nickname: '민지 (단짝친구)', date: '2026. 06. 28 16:30', message: '수아야! 미니홈피 만든 거 완전 축하해! 💖 디자인 너무 핑키핑키하고 이쁘다. 앞으로 일기 자주 올려줘! 내일 떡볶이 콜? 😆' },
+        { id: 'default-gb-2', nickname: '삼촌', date: '2026. 06. 27 20:15', message: '우리 수아가 벌써 이렇게 훌륭한 홈페이지도 직접 꾸미고 대단한걸? 멋진 일기들로 알차게 가득 채워나가길 응원한다! 최고최고 👍' }
+    ];
+
+    // -------------------------------------------------------------
+    // 데이터 실시간 수신 리스너 (Firebase)
+    // -------------------------------------------------------------
+    
+    // 1. 삭제 및 수정 데이터 리스너
+    db.collection('deleted_ids').onSnapshot(snapshot => {
+        dbDeletedIds = snapshot.docs.map(doc => doc.id);
+        renderAll();
+    });
+
+    db.collection('edited_contents').onSnapshot(snapshot => {
+        dbEditedContents = {};
+        snapshot.docs.forEach(doc => {
+            dbEditedContents[doc.id] = doc.data();
+        });
+        renderAll();
+    });
+
+    // 2. 커스텀 일기 데이터 리스너
+    db.collection('custom_diaries').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+        dbCustomDiaries = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        renderAll();
+    });
+
+    // 3. 커스텀 사진 데이터 리스너
+    db.collection('custom_photos').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+        dbCustomPhotos = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        renderAll();
+    });
+
+    // 4. 커스텀 방명록 데이터 리스너
+    db.collection('custom_guestbook').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+        dbCustomGuestbook = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        renderAll();
+    });
+
+    // 화면 종합 갱신 렌더러
+    function renderAll() {
+        renderDiaries();
+        renderPhotos();
+        renderGuestbook();
+    }
+
+    // -------------------------------------------------------------
+    // 4. 다이어리 직접 쓰기 및 수정 (Firebase 연동)
+    // -------------------------------------------------------------
     const toggleFormBtn = document.getElementById('toggle-diary-form');
     const formContainer = document.getElementById('diary-form-container');
     const diaryForm = document.getElementById('diary-form');
@@ -203,7 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalEditDiaryBtn = document.getElementById('modal-edit-diary');
     const modalDeleteDiaryBtn = document.getElementById('modal-delete-diary');
 
-    // 4-1. 일기 쓰기 폼 토글
     if (toggleFormBtn && formContainer) {
         toggleFormBtn.addEventListener('click', () => {
             if (formContainer.style.display === 'none') {
@@ -214,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formattedToday = `${now.getFullYear()}. ${String(now.getMonth() + 1).padStart(2, '0')}. ${String(now.getDate()).padStart(2, '0')}`;
                 document.getElementById('diary-date').value = formattedToday;
                 
-                // 쓰기 모드로 초기화
                 editDiaryTargetId = '';
                 diaryForm.querySelector('button[type="submit"]').textContent = '등록하기 💖';
             } else {
@@ -225,7 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4-2. 다이어리 탭 내 "➕ 새 일기 작성하기" 카드 클릭 연동
     const addDiaryCard = document.getElementById('add-diary-card');
     if (addDiaryCard) {
         addDiaryCard.addEventListener('click', () => {
@@ -237,7 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formattedToday = `${now.getFullYear()}. ${String(now.getMonth() + 1).padStart(2, '0')}. ${String(now.getDate()).padStart(2, '0')}`;
                 document.getElementById('diary-date').value = formattedToday;
                 
-                // 쓰기 모드 초기화
                 editDiaryTargetId = '';
                 diaryForm.querySelector('button[type="submit"]').textContent = '등록하기 💖';
             }
@@ -247,7 +357,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4-3. 미디어 타입 분기
     if (mediaTypeSelect) {
         mediaTypeSelect.addEventListener('change', () => {
             if (mediaTypeSelect.value === 'image') {
@@ -260,148 +369,120 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4-4. 다이어리 카드 DOM 렌더링 함수
-    function addDiaryCardToDOM(diary, prepend = true) {
-        const targetGrid = galleryGrid || document.querySelector('.gallery-section .gallery-item')?.parentElement;
-        if (!targetGrid) return;
+    // 다이어리 카드 동적 주입 렌더러
+    function renderDiaries() {
+        if (!galleryGrid) return;
         
-        const newCard = document.createElement('div');
-        newCard.className = 'gallery-item';
-        newCard.setAttribute('data-id', diary.id || `custom-${Date.now()}`);
-        newCard.setAttribute('data-detail', diary.detail);
-
-        let mediaHtml = '';
-        if (diary.mediaType === 'image') {
-            mediaHtml = `
-                <div class="gallery-image-wrapper">
-                    <img src="${diary.image}" alt="${escapeHtml(diary.title)}" class="gallery-img">
-                </div>
-            `;
-        } else {
-            const gradients = [
-                'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-                'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
-                'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-                'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)',
-                'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)'
-            ];
-            const randomGrad = gradients[Math.floor(Math.random() * gradients.length)];
-            mediaHtml = `
-                <div class="gallery-emoji-placeholder" style="background: ${randomGrad};">
-                    <span>${escapeHtml(diary.emoji)}</span>
-                </div>
-            `;
-        }
-
-        newCard.innerHTML = `
-            ${mediaHtml}
-            <div class="gallery-info">
-                <span class="date">${escapeHtml(diary.date)}</span>
-                <h4>${escapeHtml(diary.title)}</h4>
-                <p>${escapeHtml(diary.summary)}</p>
+        // 1. 그리드를 추가 카드만 두고 초기화
+        galleryGrid.innerHTML = `
+            <div class="gallery-item add-card" id="add-diary-card">
+                <div class="add-card-icon">➕</div>
+                <p>새 일기 작성하기</p>
             </div>
         `;
 
-        // 일기 상세 보기 모달 연결
-        newCard.addEventListener('click', () => {
-            const dateText = newCard.querySelector('.date').textContent;
-            const titleText = newCard.querySelector('h4').textContent;
-            const detailText = newCard.getAttribute('data-detail') || "상세 내용이 없습니다.";
-            
-            currentSelectedDiaryId = newCard.getAttribute('data-id');
+        // 추가 카드 리스너 재바인딩
+        const addCardNode = document.getElementById('add-diary-card');
+        if (addCardNode) {
+            addCardNode.addEventListener('click', () => {
+                if (formContainer && formContainer.style.display === 'none') {
+                    formContainer.style.display = 'block';
+                    if (toggleFormBtn) toggleFormBtn.textContent = '❌ 작성 취소';
+                }
+                if (formContainer) formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
 
-            const imgElement = newCard.querySelector('.gallery-img');
-            const emojiPlaceholder = newCard.querySelector('.gallery-emoji-placeholder');
-            
-            if (imgElement) {
-                modalImg.style.display = 'block';
-                modalImg.src = imgElement.src;
-                modalImg.alt = imgElement.alt;
-                modalEmojiPlaceholder.style.display = 'none';
-            } else if (emojiPlaceholder) {
-                modalImg.style.display = 'none';
-                modalEmojiPlaceholder.style.display = 'flex';
-                modalEmojiPlaceholder.style.background = emojiPlaceholder.style.background;
-                modalEmoji.textContent = emojiPlaceholder.querySelector('span').textContent;
+        // 2. 기본 일기 중 삭제되지 않은 것 필터링 및 수정본 반영
+        const visibleDefaults = defaultDiaries.filter(d => !dbDeletedIds.includes(d.id)).map(d => {
+            if (dbEditedContents[d.id]) {
+                return { ...d, ...dbEditedContents[d.id] };
             }
-
-            modalDate.textContent = dateText;
-            modalTitle.textContent = titleText;
-            modalDesc.textContent = detailText;
-
-            diaryModal.classList.add('show');
-            document.body.style.overflow = 'hidden';
+            return d;
         });
 
-        const addCardNode = document.getElementById('add-diary-card');
-        if (prepend && addCardNode && addCardNode.nextSibling) {
-            targetGrid.insertBefore(newCard, addCardNode.nextSibling);
-        } else if (prepend && addCardNode) {
-            targetGrid.appendChild(newCard);
-        } else {
-            targetGrid.appendChild(newCard);
-        }
-    }
+        // 3. 전체 일기 목록 (커스텀 데이터 + 기본 데이터)
+        const allDiaries = [...dbCustomDiaries, ...visibleDefaults];
 
-    // 다이어리 전체 다시 그리기
-    function reloadDiaries() {
-        const items = document.querySelectorAll('.gallery-grid .gallery-item:not(.add-card)');
-        items.forEach(i => i.remove());
-        loadSavedDiaries();
-    }
+        allDiaries.forEach(diary => {
+            const card = document.createElement('div');
+            card.className = 'gallery-item';
+            card.setAttribute('data-id', diary.id);
+            card.setAttribute('data-detail', diary.detail);
 
-    // 4-5. 로컬스토리지에서 기존 작성 일기 로드 및 기본 일기 수정/삭제 적용
-    function loadSavedDiaries() {
-        const deletedStr = localStorage.getItem('deleted_default_diaries');
-        const deletedDefaultIds = deletedStr ? JSON.parse(deletedStr) : [];
-
-        // 수정된 기본 일기 데이터 맵 로드
-        const editedDefaultStr = localStorage.getItem('edited_default_diaries');
-        const editedDefaultDiaries = editedDefaultStr ? JSON.parse(editedDefaultStr) : {};
-
-        const staticItems = document.querySelectorAll('.gallery-grid .gallery-item:not(.add-card)');
-        staticItems.forEach(item => {
-            const staticId = item.getAttribute('data-id');
-            if (deletedDefaultIds.includes(staticId)) {
-                item.remove();
+            let mediaHtml = '';
+            if (diary.mediaType === 'image') {
+                mediaHtml = `
+                    <div class="gallery-image-wrapper">
+                        <img src="${diary.image}" alt="${escapeHtml(diary.title)}" class="gallery-img">
+                    </div>
+                `;
             } else {
-                // 수정된 기록이 있으면 오버라이딩 적용
-                if (editedDefaultDiaries[staticId]) {
-                    const edited = editedDefaultDiaries[staticId];
-                    item.setAttribute('data-detail', edited.detail);
-                    item.querySelector('.date').textContent = edited.date;
-                    item.querySelector('h4').textContent = edited.title;
-                    item.querySelector('.gallery-info p').textContent = edited.summary;
-                    
-                    const img = item.querySelector('.gallery-img');
-                    if (img && edited.mediaType === 'image') {
-                        img.src = edited.image;
-                    }
-                    const emojiSpan = item.querySelector('.gallery-emoji-placeholder span');
-                    if (emojiSpan && edited.mediaType === 'emoji') {
-                        emojiSpan.textContent = edited.emoji;
-                    }
+                const gradients = [
+                    'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                    'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
+                    'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+                    'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)',
+                    'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)'
+                ];
+                let randomGrad = gradients[0];
+                // ID 에 비례하는 그래디언트 색상 매핑으로 일관성 유지
+                const charCodeSum = diary.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                randomGrad = gradients[charCodeSum % gradients.length];
+                
+                mediaHtml = `
+                    <div class="gallery-emoji-placeholder" style="background: ${randomGrad};">
+                        <span>${escapeHtml(diary.emoji)}</span>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                ${mediaHtml}
+                <div class="gallery-info">
+                    <span class="date">${escapeHtml(diary.date)}</span>
+                    <h4>${escapeHtml(diary.title)}</h4>
+                    <p>${escapeHtml(diary.summary)}</p>
+                </div>
+            `;
+
+            // 클릭 상세 보기 모달 연결
+            card.addEventListener('click', () => {
+                currentSelectedDiaryId = diary.id;
+                
+                if (diary.mediaType === 'image') {
+                    modalImg.style.display = 'block';
+                    modalImg.src = diary.image;
+                    modalImg.alt = diary.title;
+                    modalEmojiPlaceholder.style.display = 'none';
+                } else {
+                    modalImg.style.display = 'none';
+                    modalEmojiPlaceholder.style.display = 'flex';
+                    const placeholder = card.querySelector('.gallery-emoji-placeholder');
+                    modalEmojiPlaceholder.style.background = placeholder ? placeholder.style.background : 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)';
+                    modalEmoji.textContent = diary.emoji;
                 }
 
-                item.addEventListener('click', () => {
-                    currentSelectedDiaryId = staticId;
-                });
-            }
-        });
+                modalDate.textContent = diary.date;
+                modalTitle.textContent = diary.title;
+                modalDesc.textContent = diary.detail;
 
-        const saved = localStorage.getItem('custom_diaries');
-        if (!saved) return;
-        const customDiaries = JSON.parse(saved);
-        customDiaries.reverse().forEach(diary => {
-            addDiaryCardToDOM(diary, true);
+                diaryModal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            });
+
+            galleryGrid.appendChild(card);
         });
-        customDiaries.reverse();
     }
 
-    // 4-6. 일기 폼 등록/수정 제출 이벤트 (로컬 파일 읽기 및 수정 분기 지원)
+    // 일기 쓰기 폼 제출 (Firebase Storage 사진 업로드 & Firestore 실시간 업로드)
     if (diaryForm) {
-        diaryForm.addEventListener('submit', (e) => {
+        diaryForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const submitBtn = diaryForm.querySelector('button[type="submit"]');
+            submitBtn.textContent = '업로드 중... ☁️';
+            submitBtn.disabled = true;
 
             const date = document.getElementById('diary-date').value.trim();
             const title = document.getElementById('diary-title').value.trim();
@@ -409,192 +490,136 @@ document.addEventListener('DOMContentLoaded', () => {
             const mediaType = mediaTypeSelect.value;
             const emoji = document.getElementById('diary-emoji').value.trim() || '😸';
             const detail = document.getElementById('diary-detail').value.trim();
-
             const fileInput = document.getElementById('diary-image-file');
-            
-            const submitDiary = (imageSrc) => {
+
+            try {
+                let imageUrl = '';
+                
+                // 사진 파일이 선택되었을 때만 Firebase Storage 에 업로드
+                if (mediaType === 'image' && fileInput.files && fileInput.files[0]) {
+                    const file = fileInput.files[0];
+                    const ref = storage.ref().child('diaries/' + Date.now() + '_' + file.name);
+                    const snapshot = await ref.put(file);
+                    imageUrl = await snapshot.ref.getDownloadURL();
+                }
+
                 if (editDiaryTargetId) {
                     // [수정 모드]
                     if (editDiaryTargetId.startsWith('default-')) {
                         // 1. 기본 일기 수정 저장
-                        const editedDefaultStr = localStorage.getItem('edited_default_diaries');
-                        const editedDefaultDiaries = editedDefaultStr ? JSON.parse(editedDefaultStr) : {};
-                        
-                        // 이미지가 업로드 안 되었을 때는 기존 이미지 복원
-                        let finalImage = imageSrc;
+                        let finalImage = imageUrl;
                         if (!finalImage && mediaType === 'image') {
-                            const originalCard = document.querySelector(`.gallery-grid .gallery-item[data-id="${editDiaryTargetId}"]`);
-                            const origImg = originalCard ? originalCard.querySelector('.gallery-img') : null;
-                            if (origImg) finalImage = origImg.src;
+                            // 사진을 변경 안 했으면 기존 카드 이미지 복원
+                            const original = defaultDiaries.find(d => d.id === editDiaryTargetId);
+                            const currentEdited = dbEditedContents[editDiaryTargetId];
+                            finalImage = currentEdited ? currentEdited.image : (original ? original.image : '');
                         }
-
-                        editedDefaultDiaries[editDiaryTargetId] = {
+                        
+                        await db.collection('edited_contents').doc(editDiaryTargetId).set({
                             id: editDiaryTargetId, date, title, summary, mediaType, image: finalImage, emoji, detail
-                        };
-                        localStorage.setItem('edited_default_diaries', JSON.stringify(editedDefaultDiaries));
+                        });
                     } else {
                         // 2. 커스텀 일기 수정 저장
-                        const saved = localStorage.getItem('custom_diaries');
-                        const customDiaries = saved ? JSON.parse(saved) : [];
-                        
-                        let finalImage = imageSrc;
-                        const targetObj = customDiaries.find(d => d.id === editDiaryTargetId);
-                        if (!finalImage && targetObj && mediaType === 'image') {
-                            finalImage = targetObj.image;
+                        let finalImage = imageUrl;
+                        if (!finalImage && mediaType === 'image') {
+                            const original = dbCustomDiaries.find(d => d.id === editDiaryTargetId);
+                            finalImage = original ? original.image : '';
                         }
-
-                        customDiaries.forEach(d => {
-                            if (d.id === editDiaryTargetId) {
-                                d.date = date;
-                                d.title = title;
-                                d.summary = summary;
-                                d.mediaType = mediaType;
-                                d.image = finalImage;
-                                d.emoji = emoji;
-                                d.detail = detail;
-                            }
+                        await db.collection('custom_diaries').doc(editDiaryTargetId).update({
+                            date, title, summary, mediaType, image: finalImage, emoji, detail
                         });
-                        localStorage.setItem('custom_diaries', JSON.stringify(customDiaries));
                     }
-
                     editDiaryTargetId = '';
-                    diaryForm.querySelector('button[type="submit"]').textContent = '등록하기 💖';
+                    submitBtn.textContent = '등록하기 💖';
                 } else {
                     // [신규 등록 모드]
-                    const id = `custom-${Date.now()}`;
-                    const newDiary = { id, date, title, summary, mediaType, image: imageSrc, emoji, detail };
-                    addDiaryCardToDOM(newDiary, true);
-
-                    const saved = localStorage.getItem('custom_diaries');
-                    const customDiaries = saved ? JSON.parse(saved) : [];
-                    customDiaries.unshift(newDiary);
-                    localStorage.setItem('custom_diaries', JSON.stringify(customDiaries));
+                    const id = 'custom-' + Date.now();
+                    await db.collection('custom_diaries').doc(id).set({
+                        id, date, title, summary, mediaType, image: imageUrl, emoji, detail,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                 }
 
                 diaryForm.reset();
                 formContainer.style.display = 'none';
                 if (toggleFormBtn) toggleFormBtn.textContent = '✏️ 새 일기 쓰기';
-                reloadDiaries();
-            };
-
-            if (mediaType === 'image' && fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    submitDiary(event.target.result);
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                submitDiary('');
+            } catch (err) {
+                console.error(err);
+                alert('업로드 중 오류가 발생했습니다: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                if (!editDiaryTargetId) submitBtn.textContent = '등록하기 💖';
             }
         });
     }
 
-    // 4-7. 모달 내 "일기 삭제" 버튼 동작
+    // 모달 내 "일기 삭제"
     if (modalDeleteDiaryBtn) {
-        modalDeleteDiaryBtn.addEventListener('click', () => {
+        modalDeleteDiaryBtn.addEventListener('click', async () => {
             if (!currentSelectedDiaryId) return;
             if (confirm('이 일기를 정말 삭제하시겠어요? 😢')) {
-                const targetCard = document.querySelector(`.gallery-grid .gallery-item[data-id="${currentSelectedDiaryId}"]`);
-                if (targetCard) targetCard.remove();
-
-                if (currentSelectedDiaryId.startsWith('default-')) {
-                    const deletedStr = localStorage.getItem('deleted_default_diaries');
-                    const deletedDefaultIds = deletedStr ? JSON.parse(deletedStr) : [];
-                    deletedDefaultIds.push(currentSelectedDiaryId);
-                    localStorage.setItem('deleted_default_diaries', JSON.stringify(deletedDefaultIds));
-                } else {
-                    const saved = localStorage.getItem('custom_diaries');
-                    const customDiaries = saved ? JSON.parse(saved) : [];
-                    const filtered = customDiaries.filter(d => d.id !== currentSelectedDiaryId);
-                    localStorage.setItem('custom_diaries', JSON.stringify(filtered));
+                try {
+                    if (currentSelectedDiaryId.startsWith('default-')) {
+                        // 기본 일기는 deleted_ids 컬렉션에 추가
+                        await db.collection('deleted_ids').doc(currentSelectedDiaryId).set({
+                            id: currentSelectedDiaryId,
+                            deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } else {
+                        // 커스텀 일기는 삭제
+                        await db.collection('custom_diaries').doc(currentSelectedDiaryId).delete();
+                    }
+                    closeModal();
+                    currentSelectedDiaryId = '';
+                } catch (err) {
+                    alert('삭제 중 오류가 발생했습니다: ' + err.message);
                 }
-
-                closeModal();
-                currentSelectedDiaryId = '';
             }
         });
     }
 
-    // 4-8. 모달 내 "일기 수정" 버튼 동작 (Form Pre-fill)
+    // 모달 내 "일기 수정"
     if (modalEditDiaryBtn) {
         modalEditDiaryBtn.addEventListener('click', () => {
             if (!currentSelectedDiaryId) return;
             
-            // 수정 대상 지정
             editDiaryTargetId = currentSelectedDiaryId;
             
-            // 기존 데이터 수집
-            let dateText = '', titleText = '', summaryText = '', detailText = '', mediaType = 'image', emojiText = '😸';
-            
+            let targetObj = null;
             if (editDiaryTargetId.startsWith('default-')) {
-                const editedDefaultStr = localStorage.getItem('edited_default_diaries');
-                const editedDefaultDiaries = editedDefaultStr ? JSON.parse(editedDefaultStr) : {};
-                
-                if (editedDefaultDiaries[editDiaryTargetId]) {
-                    const d = editedDefaultDiaries[editDiaryTargetId];
-                    dateText = d.date;
-                    titleText = d.title;
-                    summaryText = d.summary;
-                    detailText = d.detail;
-                    mediaType = d.mediaType;
-                    emojiText = d.emoji;
+                targetObj = dbEditedContents[editDiaryTargetId] || defaultDiaries.find(d => d.id === editDiaryTargetId);
+            } else {
+                targetObj = dbCustomDiaries.find(d => d.id === editDiaryTargetId);
+            }
+
+            if (targetObj) {
+                document.getElementById('diary-date').value = targetObj.date || '';
+                document.getElementById('diary-title').value = targetObj.title || '';
+                document.getElementById('diary-summary').value = targetObj.summary || '';
+                document.getElementById('diary-detail').value = targetObj.detail || '';
+                mediaTypeSelect.value = targetObj.mediaType || 'image';
+                document.getElementById('diary-emoji').value = targetObj.emoji || '😸';
+
+                if (targetObj.mediaType === 'image') {
+                    imageGroup.style.display = 'block';
+                    emojiGroup.style.display = 'none';
                 } else {
-                    // DOM에서 텍스트 수집
-                    const card = document.querySelector(`.gallery-grid .gallery-item[data-id="${editDiaryTargetId}"]`);
-                    dateText = card.querySelector('.date').textContent;
-                    titleText = card.querySelector('h4').textContent;
-                    summaryText = card.querySelector('.gallery-info p').textContent;
-                    detailText = card.getAttribute('data-detail');
-                    mediaType = card.querySelector('.gallery-img') ? 'image' : 'emoji';
-                    if (mediaType === 'emoji') {
-                        emojiText = card.querySelector('.gallery-emoji-placeholder span').textContent;
-                    }
+                    imageGroup.style.display = 'none';
+                    emojiGroup.style.display = 'block';
                 }
-            } else {
-                const saved = localStorage.getItem('custom_diaries');
-                const customDiaries = saved ? JSON.parse(saved) : [];
-                const d = customDiaries.find(item => item.id === editDiaryTargetId);
-                if (d) {
-                    dateText = d.date;
-                    titleText = d.title;
-                    summaryText = d.summary;
-                    detailText = d.detail;
-                    mediaType = d.mediaType;
-                    emojiText = d.emoji;
-                }
+
+                closeModal();
+                formContainer.style.display = 'block';
+                if (toggleFormBtn) toggleFormBtn.textContent = '❌ 수정 취소';
+                diaryForm.querySelector('button[type="submit"]').textContent = '수정 완료 💖';
+                formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-
-            // 폼 필드 채우기
-            document.getElementById('diary-date').value = dateText;
-            document.getElementById('diary-title').value = titleText;
-            document.getElementById('diary-summary').value = summaryText;
-            document.getElementById('diary-detail').value = detailText;
-            mediaTypeSelect.value = mediaType;
-            document.getElementById('diary-emoji').value = emojiText;
-
-            // 미디어 분기 갱신
-            if (mediaType === 'image') {
-                imageGroup.style.display = 'block';
-                emojiGroup.style.display = 'none';
-            } else {
-                imageGroup.style.display = 'none';
-                emojiGroup.style.display = 'block';
-            }
-
-            // 폼 오픈 및 수정 모드 텍스트 변경
-            closeModal();
-            formContainer.style.display = 'block';
-            if (toggleFormBtn) toggleFormBtn.textContent = '❌ 수정 취소';
-            diaryForm.querySelector('button[type="submit"]').textContent = '수정 완료 💖';
-            
-            // 화면 스크롤
-            formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     }
 
 
     /* ==========================================
-       5. 독립적인 사진첩 (Photos) 기능 및 원본 뷰어/수정
+       5. 독립적인 사진첩 (Photos) 기능 및 원본 뷰어/수정 (Firebase 연동)
        ========================================== */
     const togglePhotoFormBtn = document.getElementById('toggle-photo-form');
     const photoFormContainer = document.getElementById('photo-form-container');
@@ -609,7 +634,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewerEditPhotoBtn = document.getElementById('viewer-edit-photo');
     const viewerDeletePhotoBtn = document.getElementById('viewer-delete-photo');
 
-    // 5-1. 사진첩 추가 폼 토글
     if (togglePhotoFormBtn && photoFormContainer) {
         togglePhotoFormBtn.addEventListener('click', () => {
             if (photoFormContainer.style.display === 'none') {
@@ -625,7 +649,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 5-2. 사진첩 추가 카드 클릭 시 폼 토글
     const addPhotoCardBtn = document.getElementById('add-photo-card');
     if (addPhotoCardBtn) {
         addPhotoCardBtn.addEventListener('click', () => {
@@ -641,7 +664,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 5-3. 사진 뷰어 닫기
     if (closePhotoViewerBtn) {
         closePhotoViewerBtn.addEventListener('click', closePhotoViewer);
     }
@@ -659,18 +681,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 5-4. 사진첩 원본 뷰어 띄우기 함수
     function openPhotoViewer(src, title) {
         if (!photoViewerModal || !viewerImg || !viewerTitle) return;
-        
         viewerImg.src = src;
         viewerTitle.textContent = title;
         photoViewerModal.classList.add('show');
         document.body.style.overflow = 'hidden';
     }
 
-    // 5-5. 사진첩 렌더링 및 로컬스토리지 저장 연동
-    function updatePhotoAlbum() {
+    // 사진첩 렌더링
+    function renderPhotos() {
         if (!photosGrid) return;
         
         photosGrid.innerHTML = `
@@ -687,55 +707,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     photoFormContainer.style.display = 'block';
                     if (togglePhotoFormBtn) togglePhotoFormBtn.textContent = '❌ 작성 취소';
                 }
-                if (photoFormContainer) {
-                    photoFormContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
+                if (photoFormContainer) photoFormContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         }
 
-        const defaultPhotos = [
-            { id: 'default-p-1', src: 'images/read_in_park.jpg', title: '햇살 좋은 날, 공원에서 독서 🌳' },
-            { id: 'default-p-2', src: 'images/newyork_1.jpg', title: '비 오는 뉴욕 타임스퀘어 🗽' },
-            { id: 'default-p-3', src: 'images/chess_3.jpg', title: '체스 대회, 초집중 모드! 🏆' },
-            { id: 'default-p-4', src: 'images/harrypotter_1.jpg', title: '브로드웨이 해리포터 연극 ⚡' },
-            { id: 'default-p-5', src: 'images/stpatrick_1.jpg', title: '뉴욕 세인트 패트릭 대성당 ⛪' },
-            { id: 'default-p-6', src: 'images/chess_2.jpg', title: '체스 경기 중 묘수 찾기 ♟️' },
-            { id: 'default-p-7', src: 'images/stpatrick_2.jpg', title: '성당 앞에서 찰칵! 📸' },
-            { id: 'default-p-8', src: 'images/harrypotter_2.jpg', title: '공연 시작 전 기대 가득! 😍' },
-            { id: 'default-p-9', src: 'images/read_in_park2.jpg', title: '호수 근처에서 힐링 타임 🍃' },
-            { id: 'default-p-10', src: 'images/chess_1.jpg', title: '체스 대회 시상대에서 🏆' },
-            { id: 'default-p-11', src: 'images/newyork_2.jpg', title: '뉴욕의 멋진 빌딩 숲 🏢' },
-            { id: 'default-p-12', src: 'images/harrypotter_3.jpg', title: '마법의 호그와트 성 성곽 🏰' },
-            { id: 'default-p-13', src: 'images/hero.png', title: '수아의 다이어리 홈 일러스트 🎨' }
-        ];
-
-        const deletedPhotosStr = localStorage.getItem('deleted_default_photos');
-        const deletedDefaultPhotoIds = deletedPhotosStr ? JSON.parse(deletedPhotosStr) : [];
-
-        // 기본 사진 수정 내역
-        const editedDefaultPhotosStr = localStorage.getItem('edited_default_photos');
-        const editedDefaultPhotos = editedDefaultPhotosStr ? JSON.parse(editedDefaultPhotosStr) : {};
-
-        const filteredDefaults = defaultPhotos.filter(p => !deletedDefaultPhotoIds.includes(p.id));
-        filteredDefaults.forEach(p => {
-            if (editedDefaultPhotos[p.id]) {
-                p.title = editedDefaultPhotos[p.id].title;
-                p.src = editedDefaultPhotos[p.id].src;
+        // 기본 사진 필터링 및 수정 반영
+        const visibleDefaults = defaultPhotos.filter(p => !dbDeletedIds.includes(p.id)).map(p => {
+            if (dbEditedContents[p.id]) {
+                return { ...p, ...dbEditedContents[p.id] };
             }
+            return p;
         });
 
-        const savedPhotosStr = localStorage.getItem('custom_photos');
-        const customPhotos = savedPhotosStr ? JSON.parse(savedPhotosStr) : [];
-
-        const allPhotos = [...customPhotos, ...filteredDefaults];
+        const allPhotos = [...dbCustomPhotos, ...visibleDefaults];
 
         allPhotos.forEach(photo => {
             const card = document.createElement('div');
             card.className = 'photo-card';
-            const cardId = photo.id || `custom-p-${Date.now()}`;
-            card.setAttribute('data-id', cardId);
+            card.setAttribute('data-id', photo.id);
             card.innerHTML = `
-                <img src="${photo.src}" alt="${escapeHtml(photo.title)}">
+                <img src="&nbsp;${photo.src}" alt="${escapeHtml(photo.title)}" onerror="this.src='${photo.src}'">
                 <div class="photo-overlay">
                     <h4>${escapeHtml(photo.title)}</h4>
                 </div>
@@ -743,381 +734,237 @@ document.addEventListener('DOMContentLoaded', () => {
             
             card.addEventListener('click', () => {
                 openPhotoViewer(photo.src, photo.title);
-                currentSelectedPhotoSrc = cardId;
+                currentSelectedPhotoSrc = photo.id; // 트래킹 ID
             });
 
             photosGrid.appendChild(card);
         });
     }
 
-    // 5-6. 사진첩 추가 폼 제출 핸들러 (수정 분기 및 Base64 변환 저장)
+    // 사진 폼 등록/수정 제출 (Storage & Firestore 연동)
     if (photoForm) {
-        photoForm.addEventListener('submit', (e) => {
+        photoForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const submitBtn = photoForm.querySelector('button[type="submit"]');
+            submitBtn.textContent = '업로드 중... ☁️';
+            submitBtn.disabled = true;
 
             const title = document.getElementById('photo-title').value.trim();
             const fileInput = document.getElementById('photo-file');
-            
-            const submitPhoto = (imageSrc) => {
+
+            try {
+                let fileUrl = '';
+                if (fileInput.files && fileInput.files[0]) {
+                    const file = fileInput.files[0];
+                    const ref = storage.ref().child('photos/' + Date.now() + '_' + file.name);
+                    const snapshot = await ref.put(file);
+                    fileUrl = await snapshot.ref.getDownloadURL();
+                }
+
                 if (editPhotoTargetId) {
-                    // [사진 수정 모드]
+                    // [수정 모드]
                     if (editPhotoTargetId.startsWith('default-')) {
-                        // 1. 기본 사진 제목/파일 수정 저장
-                        const editedDefaultPhotosStr = localStorage.getItem('edited_default_photos');
-                        const editedDefaultPhotos = editedDefaultPhotosStr ? JSON.parse(editedDefaultPhotosStr) : {};
-                        
-                        let finalSrc = imageSrc;
+                        let finalSrc = fileUrl;
                         if (!finalSrc) {
-                            const originalCard = document.querySelector(`.photo-card[data-id="${editPhotoTargetId}"]`);
-                            const origImg = originalCard ? originalCard.querySelector('img') : null;
-                            if (origImg) finalSrc = origImg.src;
+                            const original = defaultPhotos.find(p => p.id === editPhotoTargetId);
+                            const currentEdited = dbEditedContents[editPhotoTargetId];
+                            finalSrc = currentEdited ? currentEdited.src : (original ? original.src : '');
                         }
-
-                        editedDefaultPhotos[editPhotoTargetId] = {
+                        await db.collection('edited_contents').doc(editPhotoTargetId).set({
                             id: editPhotoTargetId, title, src: finalSrc
-                        };
-                        localStorage.setItem('edited_default_photos', JSON.stringify(editedDefaultPhotos));
-                    } else {
-                        // 2. 커스텀 사진 수정 저장
-                        const savedPhotosStr = localStorage.getItem('custom_photos');
-                        const customPhotos = savedPhotosStr ? JSON.parse(savedPhotosStr) : [];
-                        
-                        let finalSrc = imageSrc;
-                        const targetObj = customPhotos.find(p => p.id === editPhotoTargetId);
-                        if (!finalSrc && targetObj) {
-                            finalSrc = targetObj.src;
-                        }
-
-                        customPhotos.forEach(p => {
-                            if (p.id === editPhotoTargetId) {
-                                p.title = title;
-                                p.src = finalSrc;
-                            }
                         });
-                        localStorage.setItem('custom_photos', JSON.stringify(customPhotos));
+                    } else {
+                        let finalSrc = fileUrl;
+                        if (!finalSrc) {
+                            const original = dbCustomPhotos.find(p => p.id === editPhotoTargetId);
+                            finalSrc = original ? original.src : '';
+                        }
+                        await db.collection('custom_photos').doc(editPhotoTargetId).update({
+                            title, src: finalSrc
+                        });
                     }
                     editPhotoTargetId = '';
-                    photoForm.querySelector('button[type="submit"]').textContent = '사진첩에 등록하기 💖';
+                    submitBtn.textContent = '사진첩에 등록하기 💖';
                 } else {
-                    // [신규 사진 등록 모드]
-                    const id = `custom-p-${Date.now()}`;
-                    const newPhoto = { id, title, src: imageSrc };
-                    
-                    const savedPhotosStr = localStorage.getItem('custom_photos');
-                    const customPhotos = savedPhotosStr ? JSON.parse(savedPhotosStr) : [];
-                    customPhotos.unshift(newPhoto);
-                    localStorage.setItem('custom_photos', JSON.stringify(customPhotos));
+                    // [신규 등록 모드]
+                    const id = 'custom-p-' + Date.now();
+                    await db.collection('custom_photos').doc(id).set({
+                        id, title, src: fileUrl,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                 }
 
                 photoForm.reset();
                 photoFormContainer.style.display = 'none';
                 if (togglePhotoFormBtn) togglePhotoFormBtn.textContent = '➕ 사진 추가';
-
-                updatePhotoAlbum();
-            };
-
-            if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    submitPhoto(event.target.result);
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                // 사진 수정 시 파일을 새로 지정하지 않은 경우
-                submitPhoto('');
+            } catch (err) {
+                alert('업로드 중 에러가 발생했습니다: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                if (!editPhotoTargetId) submitBtn.textContent = '사진첩에 등록하기 💖';
             }
         });
     }
 
-    // 5-7. 사진 뷰어 내 "사진 삭제" 버튼 동작
+    // 사진 뷰어 내 "사진 삭제"
     if (viewerDeletePhotoBtn) {
-        viewerDeletePhotoBtn.addEventListener('click', () => {
+        viewerDeletePhotoBtn.addEventListener('click', async () => {
             if (!currentSelectedPhotoSrc) return;
             if (confirm('이 사진을 사진첩에서 정말 삭제하시겠어요? 😢')) {
-                const targetId = currentSelectedPhotoSrc;
-                
-                if (targetId.startsWith('default-')) {
-                    const deletedPhotosStr = localStorage.getItem('deleted_default_photos');
-                    const deletedDefaultPhotoIds = deletedPhotosStr ? JSON.parse(deletedPhotosStr) : [];
-                    deletedDefaultPhotoIds.push(targetId);
-                    localStorage.setItem('deleted_default_photos', JSON.stringify(deletedDefaultPhotoIds));
-                } else {
-                    const savedPhotosStr = localStorage.getItem('custom_photos');
-                    const customPhotos = savedPhotosStr ? JSON.parse(savedPhotosStr) : [];
-                    const filtered = customPhotos.filter(p => p.id !== targetId);
-                    localStorage.setItem('custom_photos', JSON.stringify(filtered));
+                try {
+                    if (currentSelectedPhotoSrc.startsWith('default-')) {
+                        await db.collection('deleted_ids').doc(currentSelectedPhotoSrc).set({
+                            id: currentSelectedPhotoSrc,
+                            deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } else {
+                        await db.collection('custom_photos').doc(currentSelectedPhotoSrc).delete();
+                    }
+                    closePhotoViewer();
+                    currentSelectedPhotoSrc = '';
+                } catch (err) {
+                    alert('삭제 중 오류가 발생했습니다: ' + err.message);
                 }
-
-                updatePhotoAlbum();
-                closePhotoViewer();
-                currentSelectedPhotoSrc = '';
             }
         });
     }
 
-    // 5-8. 사진 뷰어 내 "사진 수정" 버튼 동작
+    // 사진 뷰어 내 "사진 수정"
     if (viewerEditPhotoBtn) {
         viewerEditPhotoBtn.addEventListener('click', () => {
             if (!currentSelectedPhotoSrc) return;
             
             editPhotoTargetId = currentSelectedPhotoSrc;
             
-            // 기존 제목 정보 가져오기
-            let currentTitle = '';
-            const targetCard = document.querySelector(`.photo-card[data-id="${editPhotoTargetId}"]`);
-            if (targetCard) {
-                currentTitle = targetCard.querySelector('h4').textContent;
+            let targetObj = null;
+            if (editPhotoTargetId.startsWith('default-')) {
+                targetObj = dbEditedContents[editPhotoTargetId] || defaultPhotos.find(p => p.id === editPhotoTargetId);
+            } else {
+                targetObj = dbCustomPhotos.find(p => p.id === editPhotoTargetId);
             }
 
-            // 폼에 제목 채워넣기
-            document.getElementById('photo-title').value = currentTitle;
-            
-            // 사진 파일은 선택 필수 해제(수정 시 파일 유지 지원)
-            document.getElementById('photo-file').required = false;
+            if (targetObj) {
+                document.getElementById('photo-title').value = targetObj.title || '';
+                document.getElementById('photo-file').required = false; // 수정 시에는 파일 지정 필수 해제
 
-            // 폼 오픈
-            closePhotoViewer();
-            photoFormContainer.style.display = 'block';
-            if (togglePhotoFormBtn) togglePhotoFormBtn.textContent = '❌ 수정 취소';
-            photoForm.querySelector('button[type="submit"]').textContent = '사진 수정 완료 💖';
-            
-            // 스크롤 이동
-            photoFormContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                closePhotoViewer();
+                photoFormContainer.style.display = 'block';
+                if (togglePhotoFormBtn) togglePhotoFormBtn.textContent = '❌ 수정 취소';
+                photoForm.querySelector('button[type="submit"]').textContent = '사진 수정 완료 💖';
+                photoFormContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
     }
 
 
     /* ==========================================
-       5.9 방명록 실시간 저장/삭제/수정 고도화
+       5.9 방명록 실시간 저장/삭제/수정 고도화 (Firebase 연동)
        ========================================== */
-    // 기존 선언된 guestbookList, guestbookForm, messageCountSpan 을 재사용합니다.
+    // 기존에 선언된 guestbookList, guestbookForm, messageCountSpan 을 재사용합니다.
 
-    // 방명록 카드 DOM 추가 헬퍼 함수
-    function addGuestbookCardToDOM(cardData, prepend = true) {
+    // 방명록 렌더링 함수
+    function renderGuestbook() {
         if (!guestbookList) return;
+        guestbookList.innerHTML = '';
 
-        const newCard = document.createElement('div');
-        newCard.className = 'guestbook-card';
-        newCard.setAttribute('data-id', cardData.id);
-
-        newCard.innerHTML = `
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <div>
-                    <span class="guest-name">${escapeHtml(cardData.nickname)}</span>
-                    <span class="guest-date">${escapeHtml(cardData.date)}</span>
-                </div>
-                <div style="display: flex; gap: 5px;">
-                    <button class="edit-gb-btn" style="background: none; border: none; font-size: 1rem; color: #ffb347; cursor: pointer; padding: 0 5px;" title="방명록 수정">✏️</button>
-                    <button class="delete-gb-btn" style="background: none; border: none; font-size: 1.2rem; color: #ff477e; cursor: pointer; padding: 0 5px;" title="방명록 삭제">&times;</button>
-                </div>
-            </div>
-            <p class="guest-msg">${escapeHtml(cardData.message)}</p>
-        `;
-
-        // 1) 방명록 수정 리스너 연결
-        newCard.querySelector('.edit-gb-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            const id = cardData.id;
-            
-            // 기존 데이터 추출
-            let currentNickname = newCard.querySelector('.guest-name').textContent;
-            let currentMessage = newCard.querySelector('.guest-msg').textContent;
-            
-            const newNickname = prompt('수정할 작성자 닉네임을 적어주세요:', currentNickname);
-            if (newNickname === null) return; // 취소됨
-            if (!newNickname.trim()) {
-                alert('닉네임은 빈칸으로 지정할 수 없습니다.');
-                return;
+        // 기본 방명록 중 삭제되지 않은 것 필터링 및 수정본 반영
+        const visibleDefaults = defaultGuestbook.filter(g => !dbDeletedIds.includes(g.id)).map(g => {
+            if (dbEditedContents[g.id]) {
+                return { ...g, ...dbEditedContents[g.id] };
             }
+            return g;
+        });
 
-            const newMsg = prompt('수정할 한 줄 메시지를 적어주세요:', currentMessage);
-            if (newMsg === null) return; // 취소됨
-            if (!newMsg.trim()) {
-                alert('메시지 내용은 빈칸으로 지정할 수 없습니다.');
-                return;
-            }
+        // 전체 방명록 병합
+        const allGuestbook = [...dbCustomGuestbook, ...visibleDefaults];
 
-            // 돔 내용 갱신
-            newCard.querySelector('.guest-name').textContent = newNickname.trim();
-            newCard.querySelector('.guest-msg').textContent = newMsg.trim();
+        allGuestbook.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'guestbook-card';
+            card.setAttribute('data-id', item.id);
 
-            // 저장소 갱신
-            if (id.startsWith('default-gb-')) {
-                // 기본 방명록 수정
-                const editedGbStr = localStorage.getItem('edited_default_guestbook');
-                const editedGb = editedGbStr ? JSON.parse(editedGbStr) : {};
+            card.innerHTML = `
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div>
+                        <span class="guest-name">${escapeHtml(item.nickname)}</span>
+                        <span class="guest-date">${escapeHtml(item.date)}</span>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="edit-gb-btn" style="background: none; border: none; font-size: 1rem; color: #ffb347; cursor: pointer; padding: 0 5px;" title="방명록 수정">✏️</button>
+                        <button class="delete-gb-btn" style="background: none; border: none; font-size: 1.2rem; color: #ff477e; cursor: pointer; padding: 0 5px;" title="방명록 삭제">&times;</button>
+                    </div>
+                </div>
+                <p class="guest-msg">${escapeHtml(item.message)}</p>
+            `;
+
+            // 방명록 수정 버튼 클릭 리스너
+            card.querySelector('.edit-gb-btn').addEventListener('click', async (e) => {
+                e.stopPropagation();
                 
-                editedGb[id] = { id, nickname: newNickname.trim(), message: newMsg.trim() };
-                localStorage.setItem('edited_default_guestbook', JSON.stringify(editedGb));
-            } else {
-                // 커스텀 방명록 수정
-                const saved = localStorage.getItem('custom_guestbook');
-                const list = saved ? JSON.parse(saved) : [];
-                list.forEach(g => {
-                    if (g.id === id) {
-                        g.nickname = newNickname.trim();
-                        g.message = newMsg.trim();
+                const newNickname = prompt('수정할 작성자 닉네임을 적어주세요:', item.nickname);
+                if (newNickname === null) return;
+                if (!newNickname.trim()) {
+                    alert('닉네임은 필수입니다.');
+                    return;
+                }
+
+                const newMsg = prompt('수정할 한 줄 메시지를 적어주세요:', item.message);
+                if (newMsg === null) return;
+                if (!newMsg.trim()) {
+                    alert('메시지 내용은 필수입니다.');
+                    return;
+                }
+
+                try {
+                    if (item.id.startsWith('default-')) {
+                        await db.collection('edited_contents').doc(item.id).set({
+                            id: item.id, nickname: newNickname.trim(), message: newMsg.trim(), date: item.date
+                        });
+                    } else {
+                        await db.collection('custom_guestbook').doc(item.id).update({
+                            nickname: newNickname.trim(),
+                            message: newMsg.trim()
+                        });
                     }
-                });
-                localStorage.setItem('custom_guestbook', JSON.stringify(list));
-            }
-        });
-
-        // 2) 방명록 삭제 리스너 연결
-        newCard.querySelector('.delete-gb-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (confirm('이 방명록 글을 삭제하시겠어요? 😢')) {
-                newCard.remove();
-
-                const id = cardData.id;
-                if (id.startsWith('default-gb-')) {
-                    const deletedStr = localStorage.getItem('deleted_default_guestbook');
-                    const deletedIds = deletedStr ? JSON.parse(deletedStr) : [];
-                    deletedIds.push(id);
-                    localStorage.setItem('deleted_default_guestbook', JSON.stringify(deletedIds));
-                } else {
-                    const saved = localStorage.getItem('custom_guestbook');
-                    const list = saved ? JSON.parse(saved) : [];
-                    const filtered = list.filter(g => g.id !== id);
-                    localStorage.setItem('custom_guestbook', JSON.stringify(filtered));
+                } catch (err) {
+                    alert('수정 중 에러가 발생했습니다: ' + err.message);
                 }
-
-                updateGuestbookCount();
-            }
-        });
-
-        if (prepend && guestbookList.firstChild) {
-            guestbookList.insertBefore(newCard, guestbookList.firstChild);
-        } else {
-            guestbookList.appendChild(newCard);
-        }
-    }
-
-    function updateGuestbookCount() {
-        if (!messageCountSpan) return;
-        const visibleCards = document.querySelectorAll('#guestbook-list .guestbook-card');
-        messageCountSpan.textContent = visibleCards.length;
-    }
-
-    function loadGuestbook() {
-        const deletedStr = localStorage.getItem('deleted_default_guestbook');
-        const deletedDefaultGbIds = deletedStr ? JSON.parse(deletedStr) : [];
-
-        // 수정된 기본 방명록 데이터 로드
-        const editedGbStr = localStorage.getItem('edited_default_guestbook');
-        const editedDefaultGb = editedGbStr ? JSON.parse(editedGbStr) : {};
-
-        const staticGbCards = document.querySelectorAll('#guestbook-list .guestbook-card');
-        staticGbCards.forEach(card => {
-            const id = card.getAttribute('data-id');
-            if (deletedDefaultGbIds.includes(id)) {
-                card.remove();
-            } else {
-                // 수정 사항이 있는 경우 오버라이딩
-                if (editedDefaultGb[id]) {
-                    card.querySelector('.guest-name').textContent = editedDefaultGb[id].nickname;
-                    card.querySelector('.guest-msg').textContent = editedDefaultGb[id].message;
-                }
-
-                const header = card.querySelector('.card-header');
-                if (header && !card.querySelector('.delete-gb-btn')) {
-                    header.style.display = 'flex';
-                    header.style.justify = 'space-between';
-                    header.style.alignItems = 'center';
-                    header.style.width = '100%';
-
-                    const btnContainer = document.createElement('div');
-                    btnContainer.style.display = 'flex';
-                    btnContainer.style.gap = '5px';
-
-                    // 수정 ✏️ 버튼 추가
-                    const editBtn = document.createElement('button');
-                    editBtn.className = 'edit-gb-btn';
-                    editBtn.style.background = 'none';
-                    editBtn.style.border = 'none';
-                    editBtn.style.fontSize = '1rem';
-                    editBtn.style.color = '#ffb347';
-                    editBtn.style.cursor = 'pointer';
-                    editBtn.style.padding = '0 5px';
-                    editBtn.title = '방명록 수정';
-                    editBtn.innerHTML = '✏️';
-                    btnContainer.appendChild(editBtn);
-
-                    // 삭제 ❌ 버튼 추가
-                    const delBtn = document.createElement('button');
-                    delBtn.className = 'delete-gb-btn';
-                    delBtn.style.background = 'none';
-                    delBtn.style.border = 'none';
-                    delBtn.style.fontSize = '1.2rem';
-                    delBtn.style.color = '#ff477e';
-                    delBtn.style.cursor = 'pointer';
-                    delBtn.style.padding = '0 5px';
-                    delBtn.title = '방명록 삭제';
-                    delBtn.innerHTML = '&times;';
-                    btnContainer.appendChild(delBtn);
-
-                    header.appendChild(btnContainer);
-
-                    // 수정 리스너
-                    editBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        
-                        let currentNickname = card.querySelector('.guest-name').textContent;
-                        let currentMessage = card.querySelector('.guest-msg').textContent;
-                        
-                        const newNickname = prompt('수정할 작성자 닉네임을 적어주세요:', currentNickname);
-                        if (newNickname === null) return;
-                        if (!newNickname.trim()) {
-                            alert('닉네임은 빈칸으로 지정할 수 없습니다.');
-                            return;
-                        }
-
-                        const newMsg = prompt('수정할 한 줄 메시지를 적어주세요:', currentMessage);
-                        if (newMsg === null) return;
-                        if (!newMsg.trim()) {
-                            alert('메시지 내용은 빈칸으로 지정할 수 없습니다.');
-                            return;
-                        }
-
-                        card.querySelector('.guest-name').textContent = newNickname.trim();
-                        card.querySelector('.guest-msg').textContent = newMsg.trim();
-
-                        editedDefaultGb[id] = { id, nickname: newNickname.trim(), message: newMsg.trim() };
-                        localStorage.setItem('edited_default_guestbook', JSON.stringify(editedDefaultGb));
-                    });
-
-                    // 삭제 리스너
-                    delBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (confirm('이 방명록 글을 삭제하시겠어요? 😢')) {
-                            card.remove();
-                            deletedDefaultGbIds.push(id);
-                            localStorage.setItem('deleted_default_guestbook', JSON.stringify(deletedDefaultGbIds));
-                            updateGuestbookCount();
-                        }
-                    });
-                }
-            }
-        });
-
-        const saved = localStorage.getItem('custom_guestbook');
-        if (saved) {
-            const list = JSON.parse(saved);
-            list.reverse().forEach(item => {
-                addGuestbookCardToDOM(item, true);
             });
-            list.reverse();
-        }
 
-        updateGuestbookCount();
+            // 방명록 삭제 버튼 클릭 리스너
+            card.querySelector('.delete-gb-btn').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm('이 방명록 글을 삭제하시겠어요? 😢')) {
+                    try {
+                        if (item.id.startsWith('default-')) {
+                            await db.collection('deleted_ids').doc(item.id).set({
+                                id: item.id,
+                                deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        } else {
+                            await db.collection('custom_guestbook').doc(item.id).delete();
+                        }
+                    } catch (err) {
+                        alert('삭제 중 에러가 발생했습니다: ' + err.message);
+                    }
+                }
+            });
+
+            guestbookList.appendChild(card);
+        });
+
+        // 총 개수 갱신
+        if (messageCountSpan) messageCountSpan.textContent = allGuestbook.length;
     }
 
+    // 방명록 신규 등록 제출 (Firestore 저장)
     if (guestbookForm) {
         const oldForm = guestbookForm;
         const newForm = oldForm.cloneNode(true);
         oldForm.parentNode.replaceChild(newForm, oldForm);
 
-        newForm.addEventListener('submit', (event) => {
+        newForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             
             const nicknameInput = document.getElementById('nickname');
@@ -1129,23 +976,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const now = new Date();
             const formattedDate = `${now.getFullYear()}. ${String(now.getMonth() + 1).padStart(2, '0')}. ${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            const id = `custom-gb-${Date.now()}`;
+            const id = 'custom-gb-' + Date.now();
 
-            const newGbData = { id, nickname, date: formattedDate, message };
-
-            addGuestbookCardToDOM(newGbData, true);
-
-            const saved = localStorage.getItem('custom_guestbook');
-            const list = saved ? JSON.parse(saved) : [];
-            list.unshift(newGbData);
-            localStorage.setItem('custom_guestbook', JSON.stringify(list));
-
-            nicknameInput.value = '';
-            messageInput.value = '';
-            updateGuestbookCount();
-            
-            const newCard = document.querySelector(`#guestbook-list .guestbook-card[data-id="${id}"]`);
-            if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            try {
+                await db.collection('custom_guestbook').doc(id).set({
+                    id, nickname, date: formattedDate, message,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                nicknameInput.value = '';
+                messageInput.value = '';
+            } catch (err) {
+                alert('등록 중 에러가 발생했습니다: ' + err.message);
+            }
         });
     }
 
@@ -1187,10 +1030,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('hashchange', handleTabChange);
     window.addEventListener('load', handleTabChange);
     
-    // 초기 함수 기동
-    loadSavedDiaries();
-    updatePhotoAlbum();
-    loadGuestbook();
+    // 초기 기동
     handleTabChange();
 
 });
