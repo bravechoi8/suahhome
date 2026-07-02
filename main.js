@@ -13,9 +13,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const ADMIN_PASSWORD = '6262'; // 수아홈 마스터 비밀번호 (필요시 변경 가능)
 
     function checkAdminPermission() {
+        // 이번 브라우저 창(세션)에서 이미 비밀번호 인증에 한 번 성공했다면 즉시 통과!
+        if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
+            return true;
+        }
+
         const input = prompt('관리자 비밀번호를 입력해 주세요 🔐');
         if (input === null) return false; // 취소 누른 경우
         if (input === ADMIN_PASSWORD) {
+            // 인증 상태를 세션에 보관하여 이번 인터넷 창이 켜져 있는 동안에는 비밀번호 입력을 면제합니다.
+            sessionStorage.setItem('isAdminAuthenticated', 'true');
             return true;
         } else {
             alert('비밀번호가 올바르지 않아 관리자 권한이 거부되었습니다! 🙅');
